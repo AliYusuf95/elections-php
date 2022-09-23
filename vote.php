@@ -1,13 +1,11 @@
 <?php
 include 'config.php';
+
+header("location: vlogin.php");
+exit;
+
+
 $unique_key = $_GET['unique_key'];
-
-// Check if the user is logged in, if not then redirect him to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || !isset($_SESSION["admin"]) || $_SESSION["admin"] !== true){
-    header("location: vlogin.php");
-    exit;
-}
-
 $select_voters = mysqli_query($con, "SELECT * FROM voters WHERE unique_key = '$unique_key' AND status='1'");
 if(mysqli_num_rows($select_voters) == 0){
 	header("Location: https://mawkebboori.com");

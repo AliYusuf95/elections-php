@@ -50,6 +50,8 @@ function loginUser($table, $redirect_page, $callback) {
                 if (mysqli_stmt_fetch($stmt)) {
                     if (password_verify($password, $hashed_password)) {
                         // Password is correct, so start a new session
+                        session_write_close();
+                        session_destroy();
                         session_start();
                         
                         $callback($id, $username);

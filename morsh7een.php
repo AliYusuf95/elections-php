@@ -69,11 +69,6 @@ include 'config.php';
 		<div class=”float-button”></div>
 
 		<div class="row small-spacing">
-
-			<form name="submitted_votes" action="" method="get" enctype="multipart/form-data">
-				<input type="hidden" name="unique_key" value="<?php echo $unique_key?>"/>
-				<input type="hidden" name="is_submited" value="yes"/>
-
 			<?php
 			$select_candidates = mysqli_query($con, "SELECT * FROM candidates ORDER BY name");
 			while($fetch_candidates = mysqli_fetch_assoc($select_candidates)){
@@ -90,29 +85,7 @@ include 'config.php';
 			';
 			}
 			?>
-			<!--
-			<div class="col-lg-4 col-md-6">
-				<div class="box-contact">
-					<img src="http://placehold.it/450x450" alt="" class="avatar">
-					<h3 class="name margin-top-10">خالد محمد</h3>
-					<div class="text-muted">
-						<input type="checkbox" id="chk-1" style="width: 25px; height: 25px;"><br>
-						<label for="chk-1">اضغط على المربع للإختيار</label>
-					</div>
-				</div>
-			</div>
--->
-		</form>
-
-
-			<br />
-			<br />
 		</div>
-
-	</div>
-	<!-- /.main-content -->
-</div><!--/#wrapper -->
-
 	</div>
 	<!-- /.main-content -->
 </div><!--/#wrapper -->

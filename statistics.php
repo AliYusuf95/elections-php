@@ -164,7 +164,7 @@ if($isAllLocationsClosed) {
 					<div class="statistics-box with-icon">
 						<i class="ico small fa fa-times"></i>
 						<p class="text text-white" style="font-weight:bold;">الناخبين المرفوضين</p>
-						<h2 class="counter"><?php echo $total_rejected_voters; ?></h2>
+						<h2 class="counter"><-?php echo $total_rejected_voters; ?></h2>
 					</div>
 				</div>
 			</div>
