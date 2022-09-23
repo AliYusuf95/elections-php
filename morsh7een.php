@@ -75,11 +75,11 @@ include 'config.php';
 				<input type="hidden" name="is_submited" value="yes"/>
 
 			<?php
-			$select_candidates = mysqli_query($con, "SELECT * FROM candidates");
+			$select_candidates = mysqli_query($con, "SELECT * FROM candidates ORDER BY name");
 			while($fetch_candidates = mysqli_fetch_assoc($select_candidates)){
 
 			echo '
-			<div class="col-lg-4 col-md-6">
+			<div class="col-lg-3 col-md-6">
 				<div class="box-contact">
 					<img src="'.$fetch_candidates['img'].'" alt="" class="avatar">
 					<h3 class="name margin-top-10">'.$fetch_candidates['name'].'</h3>

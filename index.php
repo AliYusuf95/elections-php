@@ -82,154 +82,29 @@ include 'config.php';
 			<center style="margin-top: -20px;">
 			<img src="logo.png" alt="logo" width="220"/>
 			<h3>نظام التصويت الإلكتروني</h3>
-			<h4>تسجيل الناخبين</h4>
 			
+			<br  />
 			<hr />
-			
-            <!--<div class="alert alert-danger" role="alert">
-				انتهت المدة الزمنية للتصويت
-				<br />
-				شكراً لكم
-				<br />
-            </div>-->
-            
-            <?php
-            //die();
-            ?>
-
-			<?php
-			if (isset($_POST['new_voter'])){
-						/*
-            ini_set('display_errors', 1);
-	          ini_set('display_startup_errors', 1);
-            error_reporting(E_ALL);
-						*/
-
-			      $errors= array();
-			      $file_name = $_FILES['cpr_image']['name'];
-			      $file_size =$_FILES['cpr_image']['size'];
-			      $file_tmp =$_FILES['cpr_image']['tmp_name'];
-			      $file_type=$_FILES['cpr_image']['type'];
-			      //$file_ext=strtolower(end(explode('.',$_FILES['cpr_image']['name'])));
-
-			      $temp1 = explode('.',$_FILES['cpr_image']['name']);
-                  $file_ext = strtolower(end($temp1));
-			      $extensions= array("jpeg","jpg","png");
-
-			      if(in_array($file_ext,$extensions)=== false){
-			         $errors[]="extension not allowed, please choose a JPEG or PNG file.";
-			      }
-
-			      if($file_size > 6291456){
-			         $errors[]='File size must be excately 6 MB';
-			      }
-
-
-				$voter_name = $_POST['name'];
-				$voter_cpr = $_POST['cpr'];
-				$voter_cpr_image = $_POST['cpr'].".".$file_ext;
-				$voter_mobile = $_POST['mobile'];
-				$voter_fromwhere = $_POST['fromwhere'];
-				$voter_status = '0';
-				$date_time = date("h:i:s A");
-				$unique_key = substr(md5(mt_rand()), 0, 7);
-
-
-				$select_voters = mysqli_query($con,"SELECT * FROM voters WHERE cpr = '$voter_cpr'");
-
-	      if(mysqli_num_rows($select_voters) == 0 && empty($errors)==true && move_uploaded_file($file_tmp,"uploads/".$_POST['cpr'].".".$file_ext)){
-	        $new_voter = mysqli_query($con, "INSERT INTO voters (name, cpr, cpr_image, mobile, fromwhere, status, date_time, unique_key) VALUES ('$voter_name','$voter_cpr','$voter_cpr_image','$voter_mobile','$voter_fromwhere','$voter_status','$date_time','$unique_key')" );
-
-
-					/*
-					if (!$con -> query($new_voter)) {
-				  echo("Error description: " . $con -> error);
-					}
-					*/
-
-
-					echo'
-	        <center><div class="alert alert-success" role="alert">تم إستلام طلبك، سيتم مراسلتك عبر الواتس اب قريباً</div></center>
-	        ';
-	      }else{
-	        echo'
-					<center><div class="alert alert-danger" role="alert">يوجد لديك طلب سابق، يرجى الإتصال بنا على 38800825 إذا كنت تحتاج اي مساعدة</div></center>
-	        ';
-	      }
-
-
-
-			}
-
-			?>
-			</center>
-
-	<div class="row">
-		<div class="form-box">
-
-    	    <form action="index.php" method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <div class="input-group">
-                        <div class="input-group-addon"><span class="glyphicon glyphicon-user"></span></div>
-                        <input type="text" name="name" class="form-control" placeholder="ادخل الاسم الثلاثي" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <div class="input-group">
-                        <div class="input-group-addon"><span class="glyphicon glyphicon-phone"></span></div>
-												<input name="mobile" class="form-control" placeholder="ادخل رقم الواتس اب" pattern=".{8,8}" required title="يجب ان يكون رقم الموبايل 8 ارقام">
-                    </div>
-                </div>
-
-								<div class="form-group">
-								    <div class="input-group">
-								        <div class="input-group-addon"><span class="glyphicon glyphicon-map-marker"></span></div>
-								        <select class="form-control" name="fromwhere" required>
-								        <option value="">اختر المأتم</option>
-								        <option value="مأتم الامام الباقر عليه السلام">حسينية الإمام الباقر عليه السلام</option>
-								        <option value="مأتم الامام علي عليه السلام">مأتم الامام علي عليه السلام</option>
-								        <option value="مأتم الامام الصادق عليه السلام">مأتم الامام الصادق عليه السلام</option>
-								        <option value="مأتم الامام الرضا عليه السلام">مأتم الامام الرضا عليه السلام</option>
-								        <option value="مأتم الطويلة">مأتم الطويلة</option>
-								        <option value="قاطني قرية بوري">قاطني قرية بوري</option>
-								      </select>
-								    </div>
-								</div>
-
-                <div class="form-group">
-                    <div class="input-group">
-                        <div class="input-group-addon"><span class="glyphicon glyphicon-user"></span></div>
-												<input name="cpr" class="form-control" placeholder="الرقم الشخصي" pattern=".{9,9}" required title="يجب ان يكون الرقم الشخصي 9 ارقام">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <div class="input-group">
-												<h5 style="font-weight: bold;">يرجى ارفاق صورة من البطاقة الذكية</h5>
-												<input type="file" name="cpr_image" accept="image/*" class="custom-file-input" required>
-												<!--<input id="file" type="file" accept="image/*">-->
-                    </div>
-                </div>
-
-						<button type="submit" name="new_voter" class="btn btn-icon btn-icon-left btn-success btn-sm waves-effect waves-light"><i class="ico fa fa-check"></i>إرسال الطلب</button>
-    	    </form>
-		</div>
-	</div>
-
-	<hr />
-	<div class="row">
-		<center>
-		<div class="alert alert-info" role="alert" style="color: #f5f7fa; background-color: #333333; border-color: #f5f7fa;">
-			<b>إذا كان لديك اي طلب او إستفسار:</b>
 			<br />
-			<a href="tel:38800825" target="_blank" style="color: #f5f7fa;">إضغط هنا للإتصال بنا</a>
-			<br />
-			<a href="http://wa.me/97338800825" target="_blank" style="color: #f5f7fa;">راسلنا عبر الواتس اب</a>
+
+			<div class="row">
+				<div class="col-lg-4 col-md-4"></div>
+				<a class="col-xs-12 col-lg-4 col-md-4 box-contact" href="/morsh7een">
+					<h3 class="margin-bottom-50 margin-top-10"><i class="ico mdi mdi-account"></i> المرشحين</h3>
+				</a>
+				<div class="col-lg-4 col-md-4"></div>
+			</div>
+			<div class="row">
+				<a class="col-xs-12 col-lg-5 col-md-5 box-contact" href="/vlogin">
+					<h3 class="margin-bottom-50 margin-top-10"><i class="ico fa fa-pencil"></i> صفحة التسجيل</h3>
+				</a>
+				<div class="col-xs-12 col-lg-2 col-md-2"></div>
+				<a class="col-xs-12 col-lg-5 col-md-5 box-contact" href="/vote-screen">
+					<h3 class="margin-bottom-50 margin-top-10"><i class="ico mdi mdi-monitor-multiple"></i> شاشة التصويت</h3>
+				</a>
+			</div>
+		
 		</div>
-		</center>
-	</div>
-</div>
 
 	</div>
 	<!-- /.main-content -->

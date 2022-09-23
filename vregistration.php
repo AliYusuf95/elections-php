@@ -353,7 +353,7 @@ function timer() {
 
 					$check_error = null;
 					$stmt = mysqli_prepare($con, "SELECT id  FROM $voters_table WHERE cpr = ?");
-					mysqli_stmt_bind_param($stmt, "i", $_POST['cpr']);
+					mysqli_stmt_bind_param($stmt, "s", $_POST['cpr']);
 					if(!mysqli_stmt_execute($stmt)) {
 						$check_error = 'حدث خطأ، يرجى المحاولة مجددا';
 					} else {
@@ -407,7 +407,7 @@ function timer() {
 						throw new Exception('الرقم الشخصي غير صحيح');
 					}
 
-					$stmt->bind_param('isssii', $cpr, $name, $mobile, $fromwhere, $location_id, $user_id);
+					$stmt->bind_param('ssssii', $cpr, $name, $mobile, $fromwhere, $location_id, $user_id);
 					$stmt->execute();
 
 					if ($con->affected_rows < 1) {
@@ -435,7 +435,7 @@ function timer() {
 
 					// update screen record
 					$stmt = $con->prepare("UPDATE screens SET voterId = $voter_id WHERE id = ? AND voterId IS null");
-					$stmt->bind_param('s', $screen_id);
+					$stmt->bind_param('i', $screen_id);
 					$stmt->execute();
 
 					if ($con->affected_rows != 1) {
@@ -443,7 +443,7 @@ function timer() {
 					}
 					$stmt->close();
 
-					$con->query("INSERT INTO system_log (title, username, created_at) VALUES ('تم تسجيل الناخب رقم ($voter_id) صاحب الرقم الشخصي ($cpr) في مركز ($location_name)','$logged_user','$current_time')" );
+					$con->query("INSERT INTO system_log (title, username, created_at) VALUES ('تم تسجيل الناخب رقم ($voter_id) صاحب الرقم الشخصي ($cpr) في ($location_name)','$logged_user','$current_time')" );
 
 					$con->commit();
 					$jar = \GuzzleHttp\Cookie\CookieJar::fromArray(
@@ -513,7 +513,7 @@ function timer() {
 						<div class="form-group">
 							<div class="input-group">
 								<div class="input-group-addon"><span class="glyphicon glyphicon-user"></span></div>
-								<input name="cpr" value="<?php echo $_POST['cpr'] ?>" class="form-control" placeholder="الرقم الشخصي" readonly required>
+								<input type="text" name="cpr" value="<?php echo $_POST['cpr'].'' ?>" class="form-control" placeholder="الرقم الشخصي" readonly required>
 							</div>
 						</div>
 
@@ -543,7 +543,7 @@ function timer() {
 									"مأتم الامام الصادق عليه السلام",
 									"مأتم الامام الرضا عليه السلام",
 									"مأتم الطويلة",
-									"قاطني قرية بوري"
+									//"قاطني قرية بوري"
 								);
 								foreach ($places as $place) {
 									echo '<option value="'.$place.'" '.($place == $check_user['fromwhere'] ? 'selected' : '').'>'.$place.'</option>';

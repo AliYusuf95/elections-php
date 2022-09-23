@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div id="connect-wrapper" style="top: 150px;position: relative;">
         <center style="margin-top: -20px;">
             <img src="logo.png" alt="logo" width="600" style="filter: drop-shadow(0px 0px 2px #aaa);" />
-            <h4><span id="screen-name">صفحة التصويت</span><span id="location-name"></span></h4>
+            <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
             <div>
                 <h1 class="text-success">
@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div id="connect-wrapper" style="top: 150px;position: relative;">
         <center style="margin-top: -20px;">
             <img src="logo.png" alt="logo" width="600" style="filter: drop-shadow(0px 0px 2px #aaa);" />
-            <h4><span id="screen-name">صفحة التصويت</span><span id="location-name"></span></h4>
+            <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
 
             <div>
@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div id="connect-wrapper" style="top: 150px;position: relative;">
         <center style="margin-top: -20px;">
             <img src="logo.png" alt="logo" width="600" style="filter: drop-shadow(0px 0px 2px #aaa);" />
-            <h4><span id="screen-name">صفحة التصويت</span><span id="location-name"></span></h4>
+            <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
 
             <div id="connect-screen">
@@ -189,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div id="wrapper" style="display: none;">
         <center style="margin-top: -20px; margin-bottom: 50px;">
             <img src="logo.png" alt="logo" width="350" style="filter: drop-shadow(0px 0px 2px #aaa); width: 24em;" />
-            <h4>صفحة التصويت</h4>
+            <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
 
             <h2 id="title">
@@ -293,15 +293,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // save the ID of the user
                 socket.screenId = data.screenId;
                 socket.code = data.code;
-                $('#location-name').text('');
+                $('.location-name').text('');
                 $('#screen-message').text('رمز صفحة التصويت');
                 $('#screen-code').text(data.code);
-                $('#screen-name').text('صفحة التصويت');
+                $('.screen-name').text('صفحة التصويت');
                 $('#connect-screen').show();
             });
             socket.on("attached", function(data) {
-                $('#screen-name').text(data.screenName || 'صفحة التصويت');
-                $('#location-name').text(' - ' + data.locationName);
+                $('.screen-name').text(data.screenName || 'صفحة التصويت');
+                $('.location-name').text(' - ' + data.locationName);
                 $('#connect-screen').hide();
             });
             socket.on("show-vote", function(data) {
