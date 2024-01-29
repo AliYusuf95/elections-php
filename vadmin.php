@@ -29,8 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$stmt->bind_result($location_name);
 		$stmt->fetch();
 		$stmt->close();
+
+		$reason = isset($_POST['reason']) && !empty($_POST['reason']) ? ", السبب: ".$_POST['reason'] : "";
 		
-		$con->query("INSERT INTO system_log (title, username, created_at) VALUES ('تم $action المركز ($location_name)','$logged_user','$current_time')" );
+		$con->query("INSERT INTO system_log (title, username, created_at) VALUES ('تم $action المركز ($location_name)$reason','$logged_user','$current_time')" );
 		header("location: vadmin");
 		exit;
 	}
@@ -225,10 +227,11 @@ function timer() {
 										<a class="btn btn-default btn-icon btn-sm btn-icon-left" role="button" href="vscreens?l='.$fetch_location['id'].'"><i class="ico mdi mdi-monitor-multiple"></i>صفحات الإقتراع</a>
 									</td>
 									<td><form method="POST">
-										<input type="hidden" name="locationId" value="'.$fetch_location['id'].'">'
+										<input type="hidden" name="locationId" value="'.$fetch_location['id'].'">
+										<input type="hidden" name="reason" value="">'
 									.(
 										$fetch_location['open'] ? 
-										'<button type="submit" name="close-location" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light"><i class="ico fa fa-times"></i>إغلاق المركز</button>' 
+										'<button type="submit" data-confirmed="" name="close-location" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light"><i class="ico fa fa-times"></i>إغلاق المركز</button>' 
 										: '<button type="submit" name="open-location" class="btn btn-icon btn-icon-left btn-info btn-xs waves-effect waves-light"><i class="ico fa fa-check"></i>فتح المركز</button>' 
 									).'
 									</form></td>
@@ -292,6 +295,58 @@ function timer() {
 
     }
   } );
+
+  $('#btn-submit').on('click', function(e){
+		e.preventDefault();
+		swal({   
+			title: "Are you sure?",
+			text: "You will not be able to recover this lorem ipsum!",         type: "warning",   
+			showCancelButton: true,   
+			confirmButtonColor: "#DD6B55",
+			confirmButtonText: "Yes, delete it!", 
+			closeOnConfirm: false 
+		}, 
+			function(){   
+			$("#form-loader").submit();
+		});
+	});
+
+	$('button[name=close-location]').on('click', function(e){
+		let $this = $(this);
+		if ($this.data("confirmed") === true) {
+			return;
+		}
+		e.preventDefault();
+		swal({   
+			title: "هل انت متأكد من غلق المركز؟",
+			showCancelButton: true,   
+			confirmButtonColor: "#DD6B55",
+			confirmButtonText: "نعم، أغلق المركز", 
+			cancelButtonText: "رجوع",
+			closeOnConfirm: false,
+		}, 
+		function(){
+			swal({
+			title: "سبب الإغلاق",
+			type: 'input',
+			showCancelButton: true,
+			closeOnConfirm: true,
+			confirmButtonColor: "#DD6B55",
+			cancelButtonText: "رجوع",
+			confirmButtonText: "أغلق المركز"
+			}, function(inputValue){
+				if(inputValue === false) {
+					return;
+				}
+				let form = $this.closest('form');
+				form.find('input[name=reason]').val(inputValue);
+				$this.data("confirmed", true);
+				$this.click();
+			});
+
+		});
+	});
+
 	</script>
 
 	<script src="assets/scripts/main.min.js"></script>

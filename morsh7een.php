@@ -60,7 +60,7 @@ include 'config.php';
 <div id="wrapper">
 
 	<center style="margin-top: -20px;">
-	<img src="logo.png" alt="logo" width="220"/>
+	<img src="logo.png" alt="logo" width="90" />
 	<h3>نظام التصويت الإلكتروني</h3>
 	<h4>عرض المرشحين</h4>
 	<hr />

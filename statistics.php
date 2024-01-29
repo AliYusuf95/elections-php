@@ -31,23 +31,23 @@ if($isAllLocationsClosed) {
 
 	$total_candidates = mysqli_num_rows(mysqli_query($con,"SELECT id FROM candidates"));
 
-	$matam_emamali = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الامام علي عليه السلام'");
-	$total_matam_emamali = mysqli_num_rows($matam_emamali);
+// 	$matam_emamali = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الامام علي عليه السلام'");
+// 	$total_matam_emamali = mysqli_num_rows($matam_emamali);
 
-	$matam_baqer = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الامام الباقر عليه السلام'");
-	$total_matam_baqer = mysqli_num_rows($matam_baqer);
+// 	$matam_baqer = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الامام الباقر عليه السلام'");
+// 	$total_matam_baqer = mysqli_num_rows($matam_baqer);
 
-	$matam_sadiq = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الامام الصادق عليه السلام'");
-	$total_matam_sadiq = mysqli_num_rows($matam_sadiq);
+// 	$matam_sadiq = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الامام الصادق عليه السلام'");
+// 	$total_matam_sadiq = mysqli_num_rows($matam_sadiq);
 
-	$matam_redha = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الامام الرضا عليه السلام'");
-	$total_matam_redha = mysqli_num_rows($matam_redha);
+// 	$matam_redha = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الامام الرضا عليه السلام'");
+// 	$total_matam_redha = mysqli_num_rows($matam_redha);
 
-	$matam_taweela = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الطويلة'");
-	$total_matam_taweela = mysqli_num_rows($matam_taweela);
+// 	$matam_taweela = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'مأتم الطويلة'");
+// 	$total_matam_taweela = mysqli_num_rows($matam_taweela);
 
-	$matam_general = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'قاطني قرية بوري'");
-	$total_matam_general = mysqli_num_rows($matam_general);
+// 	$matam_general = mysqli_query($con,"SELECT * FROM voters WHERE fromwhere = 'قاطني قرية بوري'");
+// 	$total_matam_general = mysqli_num_rows($matam_general);
 
 }
 
@@ -206,7 +206,7 @@ if($isAllLocationsClosed) {
 					<table id="main" class="table table-striped table-bordered display" style="width:100%">
 						<thead>
 							<tr>
-								<th>#</th>
+								<th></th>
 								<th>الإسم</th>
 								<th>عدد الأصوات</th>
 							</tr>
@@ -214,12 +214,12 @@ if($isAllLocationsClosed) {
 						<tbody>
 							<?php
 							
-							$select_candidates = mysqli_query($con, "SELECT * FROM candidates");
-
+							$select_candidates = mysqli_query($con, "SELECT * FROM candidates ORDER BY name");
+                            
 							while($fetch_candidates = mysqli_fetch_assoc($select_candidates)){
 
 							echo '<tr>
-									<td>'.$fetch_candidates['id'].'</td>
+									<td></td>
 									<td>'.$fetch_candidates['name'].'</td>
 									<td>'.$fetch_candidates['votes'].'</td>
 									</tr>';
@@ -230,53 +230,53 @@ if($isAllLocationsClosed) {
 
 
 				</div>
-        <div class="box-content">
+        <!-- div class="box-content">
 					<h4 class="box-title">إجمالي الناخبين حسب المأتم</h4>
 
           <div class="col-lg-4 col-md-6">
   				<div class="box-contact">
   					<h3 class="name margin-top-10">حسينية الإمام الباقر</h3>
-  					<h4 class="job"><?php echo $total_matam_baqer;?></h4>
+  					<h4 class="job"><?php //echo $total_matam_baqer;?></h4>
   				</div>
 			    </div>
 
           <div class="col-lg-4 col-md-6">
   				<div class="box-contact">
   					<h3 class="name margin-top-10">مأتم الامام علي</h3>
-  					<h4 class="job"><?php echo $total_matam_emamali;?></h4>
+  					<h4 class="job"><?php //echo $total_matam_emamali;?></h4>
   				</div>
 			    </div>
 
           <div class="col-lg-4 col-md-6">
   				<div class="box-contact">
   					<h3 class="name margin-top-10">مأتم الامام الصادق</h3>
-  					<h4 class="job"><?php echo $total_matam_sadiq;?></h4>
+  					<h4 class="job"><?php //echo $total_matam_sadiq;?></h4>
   				</div>
 			    </div>
 
           <div class="col-lg-4 col-md-6">
   				<div class="box-contact">
   					<h3 class="name margin-top-10">مأتم الامام الرضا</h3>
-  					<h4 class="job"><?php echo $total_matam_redha;?></h4>
+  					<h4 class="job"><?php //echo $total_matam_redha;?></h4>
   				</div>
 			    </div>
 
           <div class="col-lg-4 col-md-6">
   				<div class="box-contact">
   					<h3 class="name margin-top-10">مأتم الطويلة</h3>
-  					<h4 class="job"><?php echo $total_matam_taweela;?></h4>
+  					<h4 class="job"><?php // echo $total_matam_taweela;?></h4>
   				</div>
 			    </div>
 
           <div class="col-lg-4 col-md-6">
   				<div class="box-contact">
   					<h3 class="name margin-top-10">قاطني قرية بوري</h3>
-  					<h4 class="job"><?php echo $total_matam_general;?></h4>
+  					<h4 class="job"><?php //echo $total_matam_general;?></h4>
   				</div>
 			    </div>
 
 				</div>
-			</div>
+			</div -->
 		</div>
 		<?php 
 		endif;
@@ -312,7 +312,7 @@ if($isAllLocationsClosed) {
 
 
 	<script>
-	$('#main').DataTable( {
+	var t = $('#main').DataTable( {
 		pageLength: 25,
 		ordering: true,
     language: {
@@ -331,6 +331,13 @@ if($isAllLocationsClosed) {
     }
 
 } );
+    t.on('order.dt search.dt', function () {
+        let i = 1;
+ 
+        t.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
+            this.data(i++);
+        });
+    }).draw();
 	</script>
 
 	<script src="assets/scripts/main.min.js"></script>

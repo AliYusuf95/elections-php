@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div id="connect-wrapper" style="top: 150px;position: relative;">
         <center style="margin-top: -20px;">
-            <img src="logo.png" alt="logo" width="600" style="filter: drop-shadow(0px 0px 2px #aaa);" />
+            <img src="logo.png" alt="logo" style="filter: drop-shadow(0px 0px 2px #aaa);" />
             <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
             <div>
@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div id="connect-wrapper" style="top: 150px;position: relative;">
         <center style="margin-top: -20px;">
-            <img src="logo.png" alt="logo" width="600" style="filter: drop-shadow(0px 0px 2px #aaa);" />
+            <img src="logo.png" alt="logo" style="filter: drop-shadow(0px 0px 2px #aaa);" />
             <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
 
@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div id="connect-wrapper" style="top: 150px;position: relative;">
         <center style="margin-top: -20px;">
-            <img src="logo.png" alt="logo" width="600" style="filter: drop-shadow(0px 0px 2px #aaa);" />
+            <img src="logo.png" alt="logo" style="filter: drop-shadow(0px 0px 2px #aaa);" />
             <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
 
@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div id="wrapper" style="display: none;">
         <center style="margin-top: -20px; margin-bottom: 50px;">
-            <img src="logo.png" alt="logo" width="350" style="filter: drop-shadow(0px 0px 2px #aaa); width: 24em;" />
+            <img src="logo.png" alt="logo" width="90" style="filter: drop-shadow(0px 0px 2px #aaa); width: 24em;" />
             <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
 
