@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
             $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم حذف المنصب (" . $position_name . ")','$logged_user','$current_time', NOW())");
             if (!empty($candidates)) {
                 $deleted_candidates = implode(', ', array_column($candidates, 'name'));
-                $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم حذف الناخبين (" . $deleted_candidates . ")','$logged_user','$current_time', NOW())");
+                $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم حذف المرشحين (" . $deleted_candidates . ")','$logged_user','$current_time', NOW())");
             }
             $con->commit();
         } catch (Exception $e) {
@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                 exit;
             }
             $stmt->close();
-            $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم إضافة الناخب (" . $_POST['name'] . ") في المنصب (" . $position_name . ")','$logged_user','$current_time', NOW())");
+            $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم إضافة المرشح (" . $_POST['name'] . ") في المنصب (" . $position_name . ")','$logged_user','$current_time', NOW())");
 
             $con->commit();
         } catch (Exception $e) {
@@ -213,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                 exit;
             }
             $stmt->close();
-            $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم حذف الناخب (".$name.") في المنصب (".$position_name.")','$logged_user','$current_time', NOW())" );
+            $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم حذف المرشح (".$name.") في المنصب (".$position_name.")','$logged_user','$current_time', NOW())" );
             // commit transaction
             $con->commit();
         } catch (Exception $e) {
@@ -455,7 +455,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                                     class="btn btn-icon btn-icon-left btn-info btn-xs waves-effect waves-light add-candidate"
                                     data-position-id="<?php echo $position['id']; ?>"
                                     data-position-name="<?php echo $position['name']; ?>"
-                            ><i class="ico fa fa-plus" style="margin: 0;"></i>إضافة ناخب
+                            ><i class="ico fa fa-plus" style="margin: 0;"></i>إضافة مرشح
                             </button>
                             <?php endif; ?>
                         </div>
@@ -491,7 +491,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                                             data-id="<?php echo $fetch_candidates['id']; ?>"
                                             data-name="<?php echo $fetch_candidates['name']; ?>"
                                             data-position-name="<?php echo $position['name']; ?>"
-                                    ><i class="ico fa fa-trash"></i>حذف الناخب</button>
+                                    ><i class="ico fa fa-trash"></i>حذف المرشح</button>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -688,19 +688,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
             let positionName = $this.data('position-name');
             // use one form for both name and cpr
             addSwal.fire({
-                title: "إضافة ناخب في منصب [ " + positionName + " ]",
+                title: "إضافة مرشح في منصب [ " + positionName + " ]",
                 html: `
                     <form autocomplete="off">
                     <div style="display: block; margin-top: 1em;">
-                    الرجاء إدخال إسم الناخب
+                    الرجاء إدخال إسم المرشح
                     </div>
-                    <input type="text" id="name" name="name" class="swal2-input" data-1p-ignore style="width: 100%; margin: 0;" autocomplete="false" placeholder="إسم الناخب">
+                    <input type="text" id="name" name="name" class="swal2-input" data-1p-ignore style="width: 100%; margin: 0;" autocomplete="false" placeholder="إسم المرشح">
                     <div style="display: block; margin-top: 1em;">
-                    الرجاء إدخال الرقم الشخصي للناخب
+                    الرجاء إدخال الرقم الشخصي للمرشح
                     </div>
                     <input type="number" id="cpr" name="cpr" class="swal2-input" maxlength="9" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" style="width: 100%; margin: 0;" autocomplete="false" placeholder="الرقم الشخصي">
                     <div style="display: block; margin-top: 1em;">
-                    الرجاء إدخال صورة الناخب
+                    الرجاء إدخال صورة المرشح
                     </div>
                     <input type="file" id="img" name="img" class="swal2-input" style="width: 100%; margin: 0;" accept="image/*">
                     </form>
@@ -731,7 +731,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                             processData: false,
                         });
                     } catch (error) {
-                        Swal.showValidationMessage('حدث خطأ أثناء إضافة الناخب, يرجى المحاولة مرة أخرى');
+                        Swal.showValidationMessage('حدث خطأ أثناء إضافة المرشح, يرجى المحاولة مرة أخرى');
                         console.error(error);
                     }
                 },
@@ -739,7 +739,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                 if (!result.isConfirmed) {
                     return;
                 }
-                successSwal.fire("تمت العملية بنجاح", "تم إضافة الناخب بنجاح");
+                successSwal.fire("تمت العملية بنجاح", "تم إضافة المرشح بنجاح");
             });
         });
 
@@ -748,11 +748,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
             let candidateName = $this.data('name');
             Swal.fire({
                 title: "هل أنت متأكد؟",
-                text: "هل أنت متأكد من حذف الناخب [ " + candidateName + " ] ؟",
+                text: "هل أنت متأكد من حذف المرشح [ " + candidateName + " ] ؟",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#DD6B55",
-                confirmButtonText: "نعم، حذف الناخب",
+                confirmButtonText: "نعم، حذف المرشح",
                 cancelButtonText: "إلغاء",
                 showLoaderOnConfirm: true,
                 allowOutsideClick: () => !Swal.isLoading(),
@@ -763,7 +763,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                             id: $this.data('id')
                         });
                     } catch (error) {
-                        Swal.showValidationMessage('حدث خطأ أثناء حذف الناخب, يرجى المحاولة مرة أخرى');
+                        Swal.showValidationMessage('حدث خطأ أثناء حذف المرشح, يرجى المحاولة مرة أخرى');
                         console.error(error);
                     }
                 },
@@ -771,7 +771,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                 if (!result.isConfirmed) {
                     return;
                 }
-                successSwal.fire("تمت العملية بنجاح", "تم حذف الناخب بنجاح");
+                successSwal.fire("تمت العملية بنجاح", "تم حذف المرشح بنجاح");
             });
         });
 
