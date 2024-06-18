@@ -170,7 +170,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h1 class="text-orange">
                     <?php if($show_error == 1): ?>
                     حدث خطأ في حفظ البيانات، يرجى إعادة تحميل الصفحة
-                    <button type="button" class="btn btn-lg btn-icon btn-icon-left btn-warning waves-effect waves-light" onclick="location.reload();">
+                    <br />
+                    <br />
+                    <button type="button" class="btn btn-lg btn-icon btn-icon-left btn-primary waves-effect waves-light" onclick="location.reload();">
                         <i class="ico fa fa-refresh"></i>إعادة تحميل
                     </button>
                     <?php elseif($show_error == 2): ?>
