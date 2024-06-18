@@ -11,8 +11,14 @@ $show_success = false;
 $show_error = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if(isset($_POST['action']) && $_POST['action'] === 'get-csrf-token') {
+        $token = $csrf->string('vote-form');
+        header('Content-Type: application/json');
+        echo json_encode(['token' => $token]);
+        exit;
+    }
     if(!isset($_POST['is_submited']) || !isset($_POST['sessionId']) || !$csrf->validate('vote-form')) {
-        $show_error = true;
+        $show_error = 1;
     } else {
         $candidates = isset($_POST['selected_candidates']) ? $_POST['selected_candidates'] : [];
         $sessionId = $_POST['sessionId'];
@@ -47,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("refresh:5; url=vote-screen");
         } catch (Exception $e) {
             $con->rollback();
-            $show_error = true;
+            $show_error = 2;
         }
     }
 }
@@ -151,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <?php
-    elseif($show_error):
+    elseif($show_error != false):
     ?>
 
     <div id="connect-wrapper" style="top: 150px;position: relative;">
@@ -162,7 +168,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div>
                 <h1 class="text-orange">
+                    <?php if($show_error == 1): ?>
+                    حدث خطأ في حفظ البيانات، يرجى إعادة تحميل الصفحة
+                    <button type="button" class="btn btn-lg btn-icon btn-icon-left btn-warning waves-effect waves-light" onclick="location.reload();">
+                        <i class="ico fa fa-refresh"></i>إعادة تحميل
+                    </button>
+                    <?php elseif($show_error == 2): ?>
                     حدث خطأ في حفظ البيانات، يرجى التواصل مع أعضاء التسجيل
+                    <?php endif; ?>
                 </h1>
                 <h1 class="text-orange" style="font-size: 10em;"><i class="ico fa fa-times"></i></h1>
             </div>
@@ -312,6 +325,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $('#connect-screen').hide();
             });
             socket.on("show-vote", function(data) {
+
+                const reloadAlert = function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: 'حدث خطأ أثناء تحميل الصفحة، يرجى المحاولة مجدداً',
+                        confirmButtonText: 'إعادة تحميل',
+                        confirmButtonColor: '#f57c00',
+                        showCancelButton: false,
+                        allowEscapeKey: false,
+                        allowOutsideClick: false,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            location.reload();
+                        }
+                    });
+                }
+
+                $.ajax({
+                    url: 'vote-screen.php',
+                    type: 'POST',
+                    data: {
+                        action: 'get-csrf-token'
+                    },
+                    success: function(data) {
+                        if (data && data.token) {
+                            $('input[name="key-awesome"]').val(data.token);
+                            return;
+                        }
+                        reloadAlert();
+                    },
+                    error: function() {
+                        reloadAlert();
+                    }
+                });
+
                 if(Array.isArray(data)) {
 
                     const candidatesByPosition = Object.entries(groupBy(data, c => c.position.id)).map(function([, candidates]) {
