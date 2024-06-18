@@ -1,4 +1,5 @@
 <?php
+global $con;
 include 'config.php';
 
 // Initialize the session
@@ -9,6 +10,8 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || !isset($_S
     header("location: vlogin.php");
     exit;
 }
+
+$logged_user = $_SESSION['username'];
 
 ?>
 <!DOCTYPE html>
@@ -47,53 +50,64 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || !isset($_S
 
 	<!-- RTL -->
 	<link rel="stylesheet" href="assets/styles/style-rtl.min.css">
+    <style>
+        @media (max-width: 1024px) {
+            .nav-container.container {
+                width: unset;
+            }
+        }
+    </style>
 </head>
 
 <body>
-<header class="fixed-header">
-	<div class="header-top">
-		<div class="container">
-			<div class="pull-right">
-				<a class="logo" style="font-weight: bold;">نظام التصويت الإلكتروني</a>
-			</div>
-			<!-- /.pull-right -->
-
-		</div>
-		<!-- /.container -->
-	</div>
-	<!-- /.header-top -->
-	<nav class="nav-horizontal">
-		<button type="button" class="menu-close hidden-on-desktop js__close_menu"><i class="fa fa-times"></i><span>CLOSE</span></button>
-		<div class="container">
-
-			<ul class="menu">
-					<li>
-						<a href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
-					</li>
-					<li>
-						<a href="vusers"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">الأعضاء</span></a>
-					</li>
-					<li>
-						<a href="statistics"><i class="ico mdi mdi-chart-bar"></i><span style="font-weight: bold;">الإحصائيات</span></a>
-					</li>
-					<li class="current">
-						<a href="log"><i class="ico mdi mdi-menu"></i><span style="font-weight: bold;">سجل النظام</span></a>
-					</li>
-					<li>
-						<a href="logout"><i class="ico mdi mdi-logout"></i><span style="font-weight: bold;">تسجيل خروج</span></a>
-					</li>
-			</ul>
-			<!-- /.menu -->
-		</div>
-		<!-- /.container -->
-	</nav>
-	<!-- /.nav-horizontal -->
-</header>
-<!-- /.fixed-header -->
-
-
-
 <div id="wrapper">
+    <header class="fixed-header">
+        <div class="header-top">
+            <div class="container">
+                <div class="pull-right">
+                    <button type="button" aria-label="Close" class="btn btn-box-tool hidden-on-desktop js__menu_button"><i class="fa fa-bars padding-10"></i></button>
+                    <a class="logo" style="font-weight: bold;">نظام التصويت الإلكتروني</a>
+                </div>
+                <!-- /.pull-right -->
+                <div class="pull-left">
+                    <a class="logo" style="font-size: 15px;">مرحبا <?php echo $logged_user; ?></a>
+                </div>
+
+            </div>
+            <!-- /.container -->
+        </div>
+        <!-- /.header-top -->
+        <nav class="nav nav-horizontal">
+            <button type="button" class="menu-close hidden-on-desktop js__close_menu"><i class="fa fa-times"></i><span>إغلاق</span></button>
+            <div class="container nav-container">
+                <ul class="menu">
+                    <li>
+                        <a href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
+                    </li>
+                    <li>
+                        <a href="vusers"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">الأعضاء</span></a>
+                    </li>
+                    <li>
+                        <a href="vcandidates"><i class="ico mdi mdi-account-multiple"></i><span style="font-weight: bold;">المرشحون</span></a>
+                    </li>
+                    <li>
+                        <a href="statistics"><i class="ico mdi mdi-chart-bar"></i><span style="font-weight: bold;">الإحصائيات</span></a>
+                    </li>
+                    <li class="current">
+                        <a class="text-primary" href="log"><i class="ico mdi mdi-menu"></i><span style="font-weight: bold;">سجل النظام</span></a>
+                    </li>
+                    <li>
+                        <a href="logout"><i class="ico mdi mdi-logout"></i><span style="font-weight: bold;">تسجيل خروج</span></a>
+                    </li>
+                </ul>
+                <!-- /.menu -->
+            </div>
+            <!-- /.container -->
+        </nav>
+        <!-- /.nav-horizontal -->
+    </header>
+    <!-- /.fixed-header -->
+
 	<div class="main-content container">
 		<!-- .row -->
 

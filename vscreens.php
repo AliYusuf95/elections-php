@@ -1,4 +1,5 @@
 <?php
+global $con;
 include 'config.php';
 
 // Initialize the session
@@ -10,7 +11,6 @@ $location_error = null;
 $isAdmin = false;
 
 $users_table = 'users';
-$ws_api = 'https://elections-ws.memamali.com';
 
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
@@ -67,10 +67,6 @@ if(!isset($location_error)) {
 
 	$select_connected_screens = mysqli_num_rows(mysqli_query($con,"SELECT id FROM screens WHERE connected = true AND locationId = ". $location_id));
 	$select_available_screens = mysqli_num_rows(mysqli_query($con,"SELECT id FROM screens WHERE voterId IS NULL AND locationId = ". $location_id));
-
-	$select_total_votes = mysqli_query($con,'SELECT sum(votes) FROM candidates');
-	$total_votes = mysqli_fetch_row($select_total_votes);
-	$total_votes_result = $total_votes[0];
 
 	$select_screens = mysqli_query($con, "SELECT id, name, connected, IF(voterId IS NULL,true,false) as available, updatedAt FROM screens WHERE locationId = ".$location_id." ORDER BY id ASC");
 
@@ -183,12 +179,15 @@ if(!isset($location_error)) {
 					<?php 
 						if($isAdmin == true):
 						?>
-							<li class="current">
+							<li>
 								<a href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
 							</li>
 							<li>
 								<a href="vusers"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">الأعضاء</span></a>
 							</li>
+                            <li>
+                                <a href="vcandidates"><i class="ico mdi mdi-account-multiple"></i><span style="font-weight: bold;">المرشحون</span></a>
+                            </li>
 							<li>
 								<a href="statistics"><i class="ico mdi mdi-chart-bar"></i><span style="font-weight: bold;">الإحصائيات</span></a>
 							</li>
@@ -202,7 +201,7 @@ if(!isset($location_error)) {
 								<a href="vregistration"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">التسجيل</span></a>
 							</li>
 							<li class="current">
-								<a href="vscreens"><i class="ico mdi mdi-monitor-multiple"></i><span style="font-weight: bold;">صفحات الإقتراع</span></a>
+								<a class="text-primary" href="vscreens"><i class="ico mdi mdi-monitor-multiple"></i><span style="font-weight: bold;">صفحات الإقتراع</span></a>
 							</li>
 							<li>
 								<a href="voters"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">بيانات الناخبين</span></a>
@@ -430,7 +429,7 @@ if(!isset($location_error)) {
 	<script src="assets/plugin/datatables/extensions/Buttons/js/dataTables.buttons.min.js"></script>
 	<script src="assets/plugin/datatables/extensions/Buttons/js/buttons.bootstrap.min.js"></script>
 	<script src="assets/scripts/datatables.demo.min.js"></script>
-    <script src="<?php echo $ws_api ?>/socket.io/socket.io.js"></script>
+    <script src="<?php echo WS_URL ?>/socket.io/socket.io.js"></script>
 	<script>
 		var datatable = $('#main').DataTable( {
 			language: {
@@ -507,7 +506,7 @@ if(!isset($location_error)) {
 			var screen =$("#deleteModal").find("input[name='screen-id']").val();
 			$.ajax({
 				method: "POST",
-				url: "<?php echo $ws_api ?>/location/<?php echo $location_id ?>/remove-screen/"+screen,
+				url: "<?php echo WS_URL ?>/location/<?php echo $location_id ?>/remove-screen/"+screen,
 				xhrFields: {
       				withCredentials: true
    				},
@@ -526,7 +525,7 @@ if(!isset($location_error)) {
 			var screen =$("#submitScreenModal").find("input[name='screen-id']").val();
 			$.ajax({
 				method: "POST",
-				url: "<?php echo $ws_api ?>/location/<?php echo $location_id ?>/submit-screen/"+screen,
+				url: "<?php echo WS_URL ?>/location/<?php echo $location_id ?>/submit-screen/"+screen,
 				xhrFields: {
       				withCredentials: true
    				},
@@ -546,7 +545,7 @@ if(!isset($location_error)) {
 			var name = $("#addModal #screen-name").val();
 			$.ajax({
 				method: "POST",
-				url: "<?php echo $ws_api ?>/location/<?php echo $location_id ?>/add-screen/"+code,
+				url: "<?php echo WS_URL ?>/location/<?php echo $location_id ?>/add-screen/"+code,
 				xhrFields: {
       				withCredentials: true
    				},
@@ -586,7 +585,7 @@ if(!isset($location_error)) {
 			modal.find('#screen-name').val('');
 		});
 
-		var socket = io("<?php echo $ws_api ?>/users", {
+		var socket = io("<?php echo WS_URL ?>/users", {
 			withCredentials: true,
 			auth: {
 				locationId: <?php echo $location_id ?>

@@ -1,22 +1,20 @@
 <?php
+global $con;
 include 'config.php';
 include 'php-csrf.php';
 
 session_start();
 // Initialize an instance
-$csrf = new CSRF();
+$csrf = new CSRF('vote-screen', 'key-awesome', 0);
 
 $show_success = false;
 $show_error = false;
 
-$voters_table = 'voters';
-$candidates_table = 'candidates';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if(!isset($_POST['is_submited']) || !isset($_POST['sessionId'])  || !isset($_POST['selected_candidates']) || !$csrf->validate('vote-form')) {
+    if(!isset($_POST['is_submited']) || !isset($_POST['sessionId']) || !$csrf->validate('vote-form')) {
         $show_error = true;
     } else {
-        $candidates = $_POST['selected_candidates'];
+        $candidates = isset($_POST['selected_candidates']) ? $_POST['selected_candidates'] : [];
         $sessionId = $_POST['sessionId'];
         $con->begin_transaction();
         try {
@@ -24,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('يمكن التصويت إلى 10 مرشحين كحد أقصى، يرجى المحاولة مجدداً');
             }
 
-            $stmt = $con->prepare("UPDATE $voters_table v JOIN screens s ON s.voterId = v.id SET v.status = 3, v.updatedAt = CURRENT_TIMESTAMP(), s.voterId = null WHERE v.status = 2 AND s.sessionId = ?");
+            $stmt = $con->prepare("UPDATE voters_data v JOIN screens s ON s.voterId = v.voterId SET v.status = 3, v.updatedAt = CURRENT_TIMESTAMP(), s.voterId = null WHERE v.status = 2 AND s.sessionId = ?");
             $stmt->bind_param('s', $sessionId);
             $stmt->execute();
 
@@ -34,7 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $stmt->close();
 
-            $stmt = $con->prepare("UPDATE $candidates_table SET votes = votes + 1 WHERE id = ?");
+            // use inter and update on duplicate
+            $stmt = $con->prepare("INSERT INTO voting_results (candidateId, votes, createdAt, updatedAt) VALUES (?, 1, NOW(), NOW()) ON DUPLICATE KEY UPDATE votes = votes + 1");
             $stmt->bind_param('s', $candidate);
             foreach ($candidates as $index => $value) {
                 $candidate = $value;
@@ -43,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
 
             $con->commit();
+            $csrf->clearHashes('vote-form');
             $show_success = true;
             header("refresh:5; url=vote-screen");
         } catch (Exception $e) {
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="assets/plugin/waves/waves.min.css">
 
     <!-- Sweet Alert -->
-    <link rel="stylesheet" href="assets/plugin/sweet-alert/sweetalert.css">
+    <link rel="stylesheet" href="assets/plugin/sweetalert2/sweetalert2.min.css">
 
     <!-- Percent Circle -->
     <link rel="stylesheet" href="assets/plugin/percircle/css/percircle.css">
@@ -111,6 +111,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .box-contact .name {
             font-size: 23px;
+        }
+        div.swal2-popup,
+        div.swal2-container {
+            font-size: 1.7rem;
         }
     </style>
 
@@ -188,17 +192,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div id="wrapper" style="display: none;">
         <center style="margin-top: -20px; margin-bottom: 50px;">
-            <img src="logo.png" alt="logo" width="90" style="filter: drop-shadow(0px 0px 2px #aaa); width: 24em;" />
+            <img src="logo.png" alt="logo" width="185" style="filter: drop-shadow(0px 0px 2px #aaa);" />
             <h4><span class="screen-name">صفحة التصويت</span><span class="location-name"></span></h4>
             <hr />
-
-            <h2 id="title">
-                يمكنك إختيار 10 اشخاص او أقل
-            </h2>
-
-            <h2 style="color: #af5656;">
-                عدد اختياراتك الحالي: <span id="count-checked-checkboxes">0</span>
-            </h2>
 
             <div class="main-content container">
                 <div class=”float-button”></div>
@@ -209,12 +205,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?=$csrf->input('vote-form', 0, 100);?>
 
                         <div id="candidates" class="row"></div>
-                        <div class="col-sm-12 col-lg-12 col-md-12">
-                            <hr>
-                            </br>
-                            <center>
-                                <button type="submit" class="btn btn-icon btn-icon-left btn-success waves-effect waves-light" onclick="return submitChanges()"><i class="ico fa fa-check"></i>إنتهاء وتسليم</button>
-                            </center>
+                        <div id="actions" class="row">
+                            <div class="col-sm-12 col-lg-12 col-md-12">
+                                <div id="page-submit" style="margin-top: 40px">
+                                    <button type="button"
+                                            class="btn btn-lg btn-icon btn-icon-left btn-success waves-effect waves-light">
+                                        <i class="ico fa fa-check"></i>إنتهاء وتسليم
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-sm-12 col-lg-12 col-md-12" style="margin-top: 40px">
+                                <div class="pull-left" id="page-next">
+                                    <button type="button"
+                                            class="btn btn-lg btn-icon btn-icon-left btn-info btn-icon-right waves-effect waves-light">
+                                        <i class="ico fa fa-arrow-left"></i>التالي
+                                    </button>
+                                </div>
+                                <div class="pull-right" id="page-prev">
+                                    <button type="button"
+                                            class="btn btn-lg btn-icon btn-icon-left btn-primary waves-effect waves-light">
+                                        السابق<i class="ico fa fa-arrow-right"></i></button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                     <br />
@@ -242,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="assets/plugin/bootstrap/js/bootstrap.min.js"></script>
     <script src="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.concat.min.js"></script>
     <script src="assets/plugin/nprogress/nprogress.js"></script>
-    <script src="assets/plugin/sweet-alert/sweetalert.min.js"></script>
+    <script src="assets/plugin/sweetalert2/sweetalert2.all.js"></script>
     <script src="assets/plugin/waves/waves.min.js"></script>
     <!-- Full Screen Plugin -->
     <script src="assets/plugin/fullscreen/jquery.fullscreen-min.js"></script>
@@ -257,16 +269,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="assets/scripts/main.min.js"></script>
     <script src="assets/scripts/horizontal-menu.min.js"></script>
-    <script src="https://elections-ws.memamali.com/socket.io/socket.io.js"></script>
+    <script src="<?php echo WS_URL; ?>/socket.io/socket.io.js"></script>
     <script>
-        function submitChanges(e) {
-            var checked = $('input[type="checkbox"]').filter(':checked').length;
-            if (checked < 10) {
-                return confirm('لقد إخترت أقل من 10 مترشحين، هل انت متأكد من تسليم الطلب؟');
-            }
-        }
+        const groupBy = (x, f) => x.reduce((a, b, i) => ((a[f(b, i, x)] ||= []).push(b), a), {});
         $(function() {
-            var socket = io("https://elections-ws.memamali.com/screens", {
+            var socket = io("<?php echo WS_URL; ?>/screens", {
                 autoConnect: false
             });
             var isVoting = false;
@@ -306,27 +313,161 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
             socket.on("show-vote", function(data) {
                 if(Array.isArray(data)) {
-                    var html = data.map(function(c) {
-                        return '<div class="col-lg-4 col-md-6">'+
-                            '<div class="candidate box-contact">'+
-                                '<img src="' + c.img + '" alt="" class="avatar">'+
-                                '<h3 class="name margin-top-10">' + c.name + '</h3>'+
-                                '<div class="text-muted">'+
-                                    '<input type="checkbox" name="selected_candidates[]" value="' + c.id + '" style="width: 25px; height: 25px;"><br>'+
-                                    '<label for="chk-1">اضغط على المربع للإختيار</label>'+
-                                '</div>'+
-                            '</div>'+
-                        '</div>';
+
+                    const candidatesByPosition = Object.entries(groupBy(data, c => c.position.id)).map(function([, candidates]) {
+                        if (Array.isArray(candidates) && candidates.length) {
+                            const position = candidates[0].position;
+                            return {
+                                position,
+                                candidates
+                            }
+                        }
+                        return null;
+                    }).filter(Boolean).sort(function(a, b) { return a.position.order - b.position.order });
+
+                    const getPositionPageHtml = function (position, candidates) {
+                        const pronounce = position.maxVotes > 1 ? `${position.maxVotes} أشخاص` : 'شخص';
+                        const selectedCounter = `<h2 style="color: #af5656;">عدد اختياراتك الحالي:<span id="count-checked-checkboxes-${position.id}">0</span></h2>`;
+                        const title = `<div class="row position" id="position-${position.id}" data-position-id="${position.id}"><div class="col-lg-12" style="margin-bottom: 40px;"><h1 style="font-weight: 700;">${position.name}</h1>${selectedCounter}<h4>يمكنك إختيار ${pronounce} او أقل</h4></div>`;
+                        return title + candidates.map(function (c) {
+                            return `<div class="col-lg-4 col-md-6">
+                                <div class="candidate box-contact">
+                                    <img src="${c.img}" alt="" class="avatar">
+                                    <h3 class="name margin-top-10">${c.name}</h3>
+                                    <div class="text-muted">
+                                        <input type="checkbox" name="selected_candidates[]" value="${c.id}" style="width: 25px; height: 25px;"><br>
+                                        <label for="chk-1">اضغط على المربع للإختيار</label>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('') + '</div>';
+                    }
+
+                    const html = candidatesByPosition.map(function (item) {
+                        return getPositionPageHtml(item.position, item.candidates);
                     }).join('');
+
                     $('#candidates').html('<input type="hidden" name="sessionId" value="'+ socket.auth.sessionId +'" />' + html);
-                    var max = 10;
+
+                    function showPositionPage(positionId) {
+                        $('.position').hide();
+                        $(`#position-${positionId}`).show();
+                        // show/hide next,prev submit buttons
+                        if (candidatesByPosition.length === 1) {
+                            $('#page-submit').show();
+                            $('#page-next').hide();
+                            $('#page-prev').hide();
+                        } else {
+                            const positionIndex = candidatesByPosition.findIndex(p => p.position.id === positionId);
+                            if (positionIndex === 0) {
+                                $('#page-prev').hide();
+                                $('#page-next').show();
+                                $('#page-submit').hide();
+                            } else if (positionIndex === candidatesByPosition.length - 1) {
+                                $('#page-submit').show();
+                                $('#page-next').hide();
+                                $('#page-prev').show();
+                            } else {
+                                $('#page-submit').hide();
+                                $('#page-next').show();
+                                $('#page-prev').show();
+                            }
+                        }
+                    }
+
+                    // hide all positions pages then show the first one
+                    $('.position').hide();
+                    if (candidatesByPosition.length > 0) {
+                        showPositionPage(candidatesByPosition[0].position.id);
+                    } else {
+                        $('#candidates').html(`<div>
+                            <h1 class="text-orange">
+                                لا يوجد مرشحين للتصويت عليهم, يرجى التواصل مع أعضاء التسجيل
+                            </h1>
+                            <h1 class="text-orange" style="font-size: 10em;"><i class="ico fa fa-times"></i></h1>
+                        </div>`);
+                        $('#page-next').hide();
+                        $('#page-prev').hide();
+                        $('#page-submit').hide();
+                    }
+
+
+                    $('#page-next').on('click', function() {
+                        const current = $('.position:visible').data('position-id');
+                        const currentIndex = candidatesByPosition.findIndex(function (item) {
+                            return String(item.position.id) === String(current);
+                        });
+                        const currentPosition = candidatesByPosition[currentIndex].position;
+                        const nextPosition = candidatesByPosition[currentIndex + 1].position;
+                        // check checked count
+                        const checked = $('.position:visible').find('input[type="checkbox"]:checked').length;
+                        if (checked < currentPosition.maxVotes) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'تنبيه',
+                                text: 'لقد اخترت أقل من العدد المطلوب، هل تريد المتابعة؟',
+                                confirmButtonText: 'متابعة',
+                                confirmButtonColor: '#f57c00',
+                                cancelButtonText: 'إلغاء',
+                                cancelButtonColor: '#3085d6',
+                                showCancelButton: true,
+                                focusCancel: true,
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    showPositionPage(nextPosition.id);
+                                }
+                            });
+                        } else {
+                            showPositionPage(nextPosition.id);
+                        }
+                    });
+
+                    $('#page-submit button').on('click', function() {
+                        const current = $('.position:visible').data('position-id');
+                        const currentIndex = candidatesByPosition.findIndex(function (item) {
+                            return String(item.position.id) === String(current);
+                        });
+                        const currentPosition = candidatesByPosition[currentIndex].position;
+                        // check checked count
+                        const checked = $('.position:visible').find('input[type="checkbox"]:checked').length;
+                        if (checked < currentPosition.maxVotes) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'تنبيه',
+                                text: 'لقد اخترت أقل من العدد المطلوب، هل تريد المتابعة؟',
+                                confirmButtonText: 'متابعة',
+                                confirmButtonColor: '#f57c00',
+                                cancelButtonText: 'إلغاء',
+                                cancelButtonColor: '#3085d6',
+                                showCancelButton: true,
+                                focusCancel: true,
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $('#voting-form').submit();
+                                }
+                            });
+                        } else {
+                            $('#voting-form').submit();
+                        }
+                    });
+
+                    $('#page-prev').on('click', function() {
+                        const current = $('.position:visible').data('position-id');
+                        const currentIndex = candidatesByPosition.findIndex(function (item) {
+                            return String(item.position.id) === String(current);
+                        });
+                        showPositionPage(candidatesByPosition[currentIndex - 1].position.id);
+                    });
+
                     var checkboxes = $('input[type="checkbox"]');
                     checkboxes.change(function() {
-                        var current = checkboxes.filter(':checked').length;
-                        checkboxes.filter(':not(:checked)').prop('disabled', current >= max);
-                        $('#count-checked-checkboxes').text(current);
-                        $('#count-checked-checkboxes-balance').text(10 - current);
-
+                        // checked count in position page
+                        const $position = $(this).closest('.position');
+                        const position = candidatesByPosition.find(p => String(p.position.id) === String($position.data('position-id'))).position;
+                        const $positionCheckboxes = $position.find('input[type="checkbox"]');
+                        const checked = $positionCheckboxes.filter(':checked').length;
+                        $positionCheckboxes.filter(':not(:checked)').prop('disabled', checked >= position.maxVotes);
+                        $('#count-checked-checkboxes-' + position.id).text(checked);
                     });
                     $('.candidate.box-contact').on('click', function(e) {
                         if (!$(e.target).is(':checkbox')) {

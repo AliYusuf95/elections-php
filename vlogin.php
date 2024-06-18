@@ -1,12 +1,13 @@
 <?php
+global $con;
+// Include config file
+require_once "config.php";
+
 // Initialize the session
-session_set_cookie_params(0, '/', '.memamali.com');
+session_set_cookie_params(0, '/', COOKIE_DOMAIN);
 session_start();
 
 // Check if the user is already logged in, if yes then redirect him to welcome page
-// $_SESSION["loggedin"] = true;
-// $_SESSION["id"] = 1;
-// $_SESSION["username"] = "alboorii";
 if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
     if (isset($_SESSION["admin"]) && $_SESSION["admin"] === true) {
         header("location: vadmin.php");
@@ -18,9 +19,6 @@ if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
 
 $users_table = 'users';
 $admin_users_table = 'admin_users';
-
-// Include config file
-require_once "config.php";
 
 // Define variables and initialize with empty values
 $username = $password = "";
@@ -50,7 +48,6 @@ function loginUser($table, $redirect_page, $callback) {
                 if (mysqli_stmt_fetch($stmt)) {
                     if (password_verify($password, $hashed_password)) {
                         // Password is correct, so start a new session
-                        session_write_close();
                         session_destroy();
                         session_start();
                         

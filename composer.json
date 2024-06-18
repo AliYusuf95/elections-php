@@ -1,5 +1,7 @@
 {
-    "require": {
-        "guzzlehttp/guzzle": "^7.5"
-    }
+  "require": {
+    "guzzlehttp/guzzle": "^7.5",
+    "vlucas/phpdotenv": "^5.6",
+    "ext-mysqli": "*"
+  }
 }

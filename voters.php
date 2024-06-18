@@ -1,4 +1,5 @@
 <?php
+global $con;
 include 'config.php';
 // Initialize the session
 session_start();
@@ -8,10 +9,8 @@ $location_name = '';
 $location_error = null;
 $isAdmin = false;
 
-$voters_table = 'voters';
 $voters_data_table = 'voters_data';
 $users_table = 'users';
-$ws_api = 'https://elections-ws.memamali.com';
 
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
@@ -60,10 +59,10 @@ getLocationInfo();
 
 if(!isset($location_error)) {
 	$select_voters = mysqli_query($con,"SELECT v.id AS id, v.name AS name, v.fromwhere AS fromwhere, v.cpr AS cpr, v.status AS status, v.updatedAt AS updatedAt,
-	 u.name AS user_name, u.username AS username FROM $voters_table v LEFT JOIN $users_table u ON v.userId = u.id WHERE v.locationId = ". $location_id);
+	 u.name AS user_name, u.username AS username FROM $voters_data_table v LEFT JOIN $users_table u ON v.userId = u.id WHERE v.locationId = ". $location_id);
 	$total_voters = mysqli_num_rows($select_voters);
-	$pending_voters = mysqli_num_rows(mysqli_query($con,"SELECT id FROM $voters_table WHERE status = '2' AND locationId = ". $location_id));
-	$done_voters = mysqli_num_rows(mysqli_query($con,"SELECT id FROM $voters_table WHERE status = '3' AND locationId = ". $location_id));
+	$pending_voters = mysqli_num_rows(mysqli_query($con,"SELECT id FROM $voters_data_table WHERE status = '2' AND locationId = ". $location_id));
+	$done_voters = mysqli_num_rows(mysqli_query($con,"SELECT id FROM $voters_data_table WHERE status = '3' AND locationId = ". $location_id));
 }
 
 $logged_user = $_SESSION['username'];
@@ -150,11 +149,14 @@ $current_time = date("h:i:s A");
 						if($isAdmin == true):
 						?>
 							<li class="current">
-								<a href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
+								<a class="text-primary" href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
 							</li>
 							<li>
 								<a href="vusers"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">الأعضاء</span></a>
 							</li>
+                            <li>
+                                <a href="vcandidates"><i class="ico mdi mdi-account-multiple"></i><span style="font-weight: bold;">المرشحون</span></a>
+                            </li>
 							<li>
 								<a href="statistics"><i class="ico mdi mdi-chart-bar"></i><span style="font-weight: bold;">الإحصائيات</span></a>
 							</li>
@@ -171,7 +173,7 @@ $current_time = date("h:i:s A");
 								<a href="vscreens"><i class="ico mdi mdi-monitor-multiple"></i><span style="font-weight: bold;">صفحات الإقتراع</span></a>
 							</li>
 							<li>
-								<a href="voters"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">بيانات الناخبين</span></a>
+								<a class="text-primary" href="voters"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">بيانات الناخبين</span></a>
 							</li>
 						<?php
 						endif;

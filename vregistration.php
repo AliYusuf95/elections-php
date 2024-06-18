@@ -1,5 +1,5 @@
 <?php
-require 'vendor/autoload.php';
+global $con;
 include 'config.php';
 
 // Initialize the session
@@ -13,9 +13,12 @@ $check_user = null;
 $isAdmin = false;
 
 $voters_table = 'voters';
+$voting_results_table = 'voting_results';
 $voters_data_table = 'voters_data';
+$voter_form_fields = array('name', 'mobile');
+$voter_required_fields = array('cpr', 'screen');
+$accept_only_from_voters_table = true;
 $users_table = 'users';
-$ws_api = 'https://elections-ws.memamali.com';
 
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || !isset($_SESSION["id"])){
@@ -211,13 +214,13 @@ function timer() {
 						if($isAdmin == true):
 						?>
 							<li class="current">
-								<a href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">الرئيسية</span></a>
+								<a class="text-primary" href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">الرئيسية</span></a>
 							</li>
 						<?php
 						else:
 						?>
 							<li class="current">
-								<a href="vregistration"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">التسجيل</span></a>
+								<a class="text-primary" href="vregistration"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">التسجيل</span></a>
 							</li>
 							<li>
 								<a href="vscreens"><i class="ico mdi mdi-monitor-multiple"></i><span style="font-weight: bold;">صفحات الإقتراع</span></a>
@@ -266,7 +269,7 @@ function timer() {
 				</div>
         <meta http-equiv="refresh" content="5; URL=vadmin" />
 				';
-        mysqli_query($con, "INSERT INTO system_log (title, username, created_at) VALUES ('تم قبول الناخب رقم $voter_id','$logged_user','$current_time')" );
+        mysqli_query($con, "INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم قبول الناخب رقم $voter_id','$logged_user','$current_time', NOW())" );
       } else {
 				echo '
 				<br />
@@ -297,7 +300,7 @@ function timer() {
 				</div>
         <meta http-equiv="refresh" content="5; URL=vadmin" />
 				';
-        mysqli_query($con, "INSERT INTO system_log (title, username, created_at) VALUES ('تم رفض الناخب رقم $voter_id والسبب هو: $reject_note','$logged_user','$current_time')" );
+        mysqli_query($con, "INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم رفض الناخب رقم $voter_id والسبب هو: $reject_note','$logged_user','$current_time', NOW())" );
 			} else {
 				echo '
 				<br />
@@ -323,7 +326,7 @@ function timer() {
 		<div class="container">
 
 			<center>
-			<img src="logo.png" alt="logo" width="350" style="filter: drop-shadow(0px 0px 2px #aaa);"/>
+			<img src="logo.png" alt="logo" width="185" style="filter: drop-shadow(0px 0px 2px #aaa);"/>
 			<h3>نظام التصويت الإلكتروني</h3>
 			<h4>تسجيل الناخبين</h4>
 
@@ -352,7 +355,7 @@ function timer() {
 					}
 
 					$check_error = null;
-					$stmt = mysqli_prepare($con, "SELECT id  FROM $voters_table WHERE cpr = ?");
+					$stmt = mysqli_prepare($con, "SELECT id FROM $voters_data_table WHERE cpr = ?");
 					mysqli_stmt_bind_param($stmt, "s", $_POST['cpr']);
 					if(!mysqli_stmt_execute($stmt)) {
 						$check_error = 'حدث خطأ، يرجى المحاولة مجددا';
@@ -362,17 +365,20 @@ function timer() {
 							$check_error = 'الناخب صاحب الرقم '. $_POST['cpr'] .' صوت مسبقاً';
 						}
 						mysqli_stmt_close($stmt);
-						$res = $con->query("SELECT name, mobile, fromwhere FROM $voters_data_table WHERE cpr = ".$_POST['cpr']);
-						
+                        $stmt = $con->prepare("SELECT ".implode(',', $voter_form_fields)." FROM $voters_table WHERE cpr = ?");
+                        $stmt->bind_param('s', $_POST['cpr']);
+                        $stmt->execute();
+                        $res = $stmt->get_result();
 						if (!$res || !($check_user = $res->fetch_assoc())) {
-							$check_user = array(
-								"name" => "",
-								"mobile" => "",
-								"fromwhere" => ""
-							);
+                            if ($accept_only_from_voters_table) {
+                                $check_error = 'الرقم الشخصي غير مسجل';
+                            } else {
+                                $check_user = array_fill_keys($voter_form_fields, '');
+                            }
 						} else {
 							$res->close();
 						}
+                        $stmt->close();
 					}
 				} catch (Exception $e) {
 					$check_error = $e->getMessage();
@@ -384,43 +390,78 @@ function timer() {
 					echo '<div class="alert alert-info">بإمكان الناخب التصويت</div>';
 				}
 			}
-			if(isset($_POST['add_voter']) && isset($_POST['cpr']) && isset($_POST['fromwhere']) && isset($_POST['screen'])
-			&& !empty($_POST['cpr']) && !empty($_POST['fromwhere']) && !empty($_POST['screen'])) {
 
+            if (isset($_POST['add_voter']) && count(array_filter($voter_required_fields, function($field) { return empty($_POST[$field]); })) > 0) {
+                echo '<div class="alert alert-danger">الرجاء تعبئة جميع الحقول</div>';
+            } else if(isset($_POST['add_voter'])) {
 				$con->begin_transaction();
 				$add_error = null;
 				$screen_name = '';
 				try {
-					// inser/update voter data
-					$stmt = $con->prepare("INSERT INTO $voters_table (cpr, name, mobile, fromwhere, status, locationId, userId, createdAt, updatedAt) VALUES (?, ?, ?, ?, 2, ?, ?, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())");
+                    $cpr = trim($_POST['cpr']);
+                    $screen_id = trim($_POST['screen']);
 
+                    // validate cpr
+                    preg_match('/(\d{2})(\d{2})\d{5}/', $cpr, $cpr_match);
+                    if (count($cpr_match) != 3) {
+                        throw new Exception('الرقم الشخصي غير صحيح');
+                    }
 
-					$name = isset($_POST['name']) ? $_POST['name'] : '';
-					$mobile = isset($_POST['mobile']) ? $_POST['mobile'] : '';
-					$fromwhere = $_POST['fromwhere'];
-					$cpr = $_POST['cpr'];
-					$screen_id = $_POST['screen'];
+                    $stmt = $con->prepare("SELECT id FROM $voters_table WHERE cpr = ?");
+                    $stmt->bind_param('s', $cpr);
+                    $stmt->execute();
+                    $stmt->bind_result($voter_id);
+                    $stmt->fetch();
+                    $stmt->close();
 
-					preg_match('/(\d{2})(\d{2})\d{5}/', $_POST['cpr'], $cpr_match);
+                    if ($accept_only_from_voters_table && !$voter_id) {
+                        throw new Exception('الرقم الشخصي غير مسجل');
+                    } else if (!$voter_id) {
+                        $stmt = $con->prepare("INSERT INTO $voters_table (cpr, status, locationId, userId) VALUES(?, 0, ?, ?)");
+                        $stmt->bind_param('sii', $cpr, $location_id, $user_id);
+                        $stmt->execute();
+                        if ($con->affected_rows < 1) {
+                            throw new Exception('حدث خطأ في حفظ البيانات، يرجى المحاولة مجدداً');
+                        }
+                        $stmt->close();
+                        $voter_id = $con->insert_id;
+                    }
 
-					if (count($cpr_match) != 3) {
-						throw new Exception('الرقم الشخصي غير صحيح');
-					}
+                    // get all fields from voters_data table
+                    $stmt = $con->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? and COLUMN_NAME not in ('id', 'createdAt', 'updatedAt')");
+                    $stmt->bind_param('s', $voters_data_table);
+                    $stmt->execute();
+                    $stmt->bind_result($column_name);
+                    $voter_table_fields = [];
+                    while ($stmt->fetch()) {
+                        $voter_table_fields[] = $column_name;
+                    }
+                    // insert data defined in $voter_table_fields
+                    $stmt = $con->prepare("INSERT INTO $voters_data_table (".implode(',', $voter_table_fields).", createdAt, updatedAt) VALUES(".implode(',', array_fill(0, count($voter_table_fields), '?')).", NOW(), NOW())");
 
-					$stmt->bind_param('ssssii', $cpr, $name, $mobile, $fromwhere, $location_id, $user_id);
+                    $types = str_repeat('s', count($voter_table_fields));
+                    // use data from post
+                    $values = array_map(function($field) use ($location_id, $user_id, $voter_id) {
+                        if ($field == 'locationId') {
+                            return $location_id;
+                        }
+                        if ($field == 'userId') {
+                            return $user_id;
+                        }
+                        if ($field == 'voterId') {
+                            return $voter_id;
+                        }
+                        if ($field == 'status') {
+                            return 2;
+                        }
+                        return isset($_POST[$field]) ? trim($_POST[$field]) : null;
+                    }, $voter_table_fields);
+					$stmt->bind_param($types, ...$values);
 					$stmt->execute();
 
 					if ($con->affected_rows < 1) {
 						throw new Exception('تم تسجيل الناخب مسبقاً، في حال عدم التأكد يرجى التواصل مع إدارة اللجنة');
 					}
-					$stmt->close();
-
-					// select voter id
-					$stmt = $con->prepare("SELECT id from $voters_table WHERE cpr = ?");
-					$stmt->bind_param('s', $cpr);
-					$stmt->execute();
-					$stmt->bind_result($voter_id);
-					$stmt->fetch();
 					$stmt->close();
 
 					// select screen name
@@ -443,18 +484,18 @@ function timer() {
 					}
 					$stmt->close();
 
-					$con->query("INSERT INTO system_log (title, username, created_at) VALUES ('تم تسجيل الناخب رقم ($voter_id) صاحب الرقم الشخصي ($cpr) في ($location_name)','$logged_user','$current_time')" );
+					$con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم تسجيل الناخب رقم ($voter_id) صاحب الرقم الشخصي ($cpr) في ($location_name)','$logged_user','$current_time', NOW())" );
 
 					$con->commit();
 					$jar = \GuzzleHttp\Cookie\CookieJar::fromArray(
 						[
 							'PHPSESSID' => session_id()
 						],
-						'.memamali.com'
+                        INTERNAL_WS_COOKIE_DOMAIN
 					);					
-					$client = new \GuzzleHttp\Client(['cookies'  => $jar]);
+					$client = new \GuzzleHttp\Client();
 					try {
-						$client->request('POST', $ws_api."/location/$location_id/show-vote/".$screen_id);
+						$client->request('POST', INTERNAL_WS_URL."/location/$location_id/show-vote/".$screen_id, ['cookies'  => $jar]);
 					} catch(\GuzzleHttp\Exception\RequestException $e) {
 						if( $e->hasResponse() && $e->getResponse()->getStatusCode() == '400'){
 							throw new Exception('لم يتم تحديث صفحة الإقتراع تلقائيا، يرجى تحديثها يدوياً');
@@ -464,7 +505,11 @@ function timer() {
 					}
 				} catch (mysqli_sql_exception $e) {
 					$con->rollback();
-					throw new Exception('حدث خطأ في حفظ البيانات، يرجى المحاولة مجدداً');
+                    if ($e->getCode() == 1062) {
+                        $add_error = 'تم تسجيل الناخب مسبقاً، في حال عدم التأكد يرجى التواصل مع إدارة اللجنة';
+                    } else {
+                        $add_error = 'حدث خطأ في حفظ البيانات، يرجى المحاولة مجدداً';
+                    }
 				} catch (Exception $e) {
 					$add_error = $e->getMessage();
 				}
@@ -531,7 +576,7 @@ function timer() {
 							</div>
 						</div>
 						
-						<div class="form-group">
+						<!-- div class="form-group">
 							<div class="input-group">
 								<div class="input-group-addon"><span class="glyphicon glyphicon-map-marker"></span></div>
 								<select class="form-control" name="fromwhere" required>
@@ -550,7 +595,7 @@ function timer() {
 								}
 								?>
 							</select>
-							</div>
+							</div-->
 						</div>
 
 						<div class="form-group">
@@ -625,9 +670,9 @@ function timer() {
 	<script src="assets/plugin/datatables/extensions/Responsive/js/dataTables.responsive.min.js"></script>
 	<script src="assets/plugin/datatables/extensions/Responsive/js/responsive.bootstrap.min.js"></script>
 	<script src="assets/scripts/datatables.demo.min.js"></script>
-    <script src="<?php echo $ws_api ?>/socket.io/socket.io.js"></script>
+    <script src="<?php echo WS_URL ?>/socket.io/socket.io.js"></script>
 	<script>
-        var socket = io("<?php echo $ws_api ?>/users", {
+        var socket = io("<?php echo WS_URL ?>/users", {
 			withCredentials: true,
 			auth: {
 				locationId: <?php echo $location_id ?>

@@ -1,0 +1,46 @@
+services:
+
+  mariadb:
+    image: mariadb:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: memamali_elections
+      MYSQL_USER: memamali_public
+      MYSQL_PASSWORD: Sh@[8Pd2z]O$
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./.mariadb:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: memamali_public
+      PMA_PASSWORD: Sh@[8Pd2z]O$
+    ports:
+      - "8112:80"
+    depends_on:
+      - mariadb
+
+  web:
+    build: .
+    ports:
+      - "8111:80"
+    volumes:
+      - .:/var/www/html
+      - ./.sessions:/var/cpanel/php/sessions/ea-php72
+    depends_on:
+      - mariadb
+
+  ws:
+    build: ../elections-ws
+    ports:
+      - "8113:3000"
+    volumes:
+      - ../elections-ws:/usr/src/app
+      - ./.sessions:/var/cpanel/php/sessions/ea-php72
+    depends_on:
+      - mariadb

@@ -1,4 +1,6 @@
 RewriteEngine On
+# https if host not 'localhost' or 'web'
+RewriteCond %{HTTP_HOST} !(localhost|web)
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -34,4 +36,10 @@ RewriteRule ^([^\.]+)$ $1.php [NC,L]
 </IfModule>
 # END cPanel-generated php ini directives, do not edit
 
-php_value session.cookie_domain .memamali.com
+# set env if it's local host
+SetEnvIf Host "localhost" IS_LOCAL
+
+# if not local set the cookie domain
+<IfDefine !IS_LOCAL>
+    php_value session.cookie_domain .memamali.com
+</IfDefine>

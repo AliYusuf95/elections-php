@@ -1,4 +1,5 @@
 <?php
+global $con;
 include 'config.php';
 
 // Initialize the session
@@ -16,33 +17,113 @@ $current_time = date("h:i:s A");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	if(isset($_POST['locationId']) && (isset($_POST['close-location']) || isset($_POST['open-location']))) {
-		$stmt = $con->prepare("UPDATE locations SET open = ".(isset($_POST['close-location']) ? 'false' : 'true')." WHERE id = ?");
-        $stmt->bind_param('s', $_POST['locationId']);
-        $stmt->execute();
-        $stmt->close();
-		
-		$action = isset($_POST['close-location']) ? 'غلق' : 'فتح';
 
-		$stmt = $con->prepare("SELECT name FROM locations WHERE id = ?");
-        $stmt->bind_param('s', $_POST['locationId']);
-        $stmt->execute();
-		$stmt->bind_result($location_name);
-		$stmt->fetch();
-		$stmt->close();
+        $error_message = null;
 
-		$reason = isset($_POST['reason']) && !empty($_POST['reason']) ? ", السبب: ".$_POST['reason'] : "";
-		
-		$con->query("INSERT INTO system_log (title, username, created_at) VALUES ('تم $action المركز ($location_name)$reason','$logged_user','$current_time')" );
-		header("location: vadmin");
-		exit;
+        if (isset($_POST['close-location'])) {
+            // check if there is screen linked to voter
+            $stmt = $con->prepare("SELECT count(*) FROM screens WHERE voterId is not null AND locationId = ?");
+            $stmt->bind_param('s', $_POST['locationId']);
+            $stmt->execute();
+            $stmt->bind_result($count);
+            $stmt->fetch();
+            $stmt->close();
+
+            if ($count > 0) {
+                $error_message = "لا يمكنك غلق المركز لوجود صفحات إقتراع مشغولة";
+            }
+        } else if (isset($_POST['open-location'])) {
+            // check if there is candidates
+            $stmt = $con->prepare("SELECT count(*) FROM candidates");
+            $stmt->execute();
+            $stmt->bind_result($count);
+            $stmt->fetch();
+            $stmt->close();
+
+            if ($count < 1) {
+                $error_message = "لا يمكنك فتح المركز لعدم وجود مرشحين";
+            }
+        }
+
+        if ($error_message === null) {
+            $stmt = $con->prepare("UPDATE locations SET open = " . (isset($_POST['close-location']) ? 'false' : 'true') . " WHERE id = ?");
+            $stmt->bind_param('s', $_POST['locationId']);
+            $stmt->execute();
+            $stmt->close();
+
+            $action = isset($_POST['close-location']) ? 'غلق' : 'فتح';
+
+            $stmt = $con->prepare("SELECT name FROM locations WHERE id = ?");
+            $stmt->bind_param('s', $_POST['locationId']);
+            $stmt->execute();
+            $stmt->bind_result($location_name);
+            $stmt->fetch();
+            $stmt->close();
+
+            $reason = isset($_POST['reason']) && !empty($_POST['reason']) ? ", السبب: " . $_POST['reason'] : "";
+
+            $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم $action المركز ($location_name)$reason','$logged_user','$current_time', NOW())");
+            header("location: vadmin");
+            exit;
+        }
 	}
+    if(isset($_POST['action']) && $_POST['action'] === 'add-location' && !empty($_POST['name'])) {
+        $stmt = $con->prepare("INSERT INTO locations (name, createdAt, updatedAt) VALUES (?, NOW(), NOW())");
+        $stmt->bind_param('s', $_POST['name']);
+        $stmt->execute();
+        if($stmt->affected_rows !== 1) {
+            echo 'error';
+            exit;
+        }
+        $stmt->close();
+        $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم إضافة المركز (".$_POST['name'].")','$logged_user','$current_time', NOW())" );
+        echo 'success';
+        exit;
+    }
+    if(isset($_POST['action']) && $_POST['action'] === 'delete-location' && !empty($_POST['id'])) {
+        // fetch location name to $location_name
+        $id = $_POST['id'];
+        $stmt = $con->prepare("SELECT name FROM locations WHERE id = ?");
+        $stmt->bind_param('s', $id);
+        $stmt->execute();
+        $stmt->bind_result($location_name);
+        $stmt->fetch();
+        $stmt->close();
+
+        $stmt = $con->prepare("DELETE FROM locations WHERE id = ?");
+        $stmt->bind_param('s', $id);
+        $stmt->execute();
+        if($stmt->affected_rows !== 1) {
+            echo 'error';
+            exit;
+        }
+        $stmt->close();
+        $con->query("INSERT INTO system_log (title, username, created_at, createdAt) VALUES ('تم حذف المركز ($location_name)','$logged_user','$current_time', NOW())" );
+        echo 'success';
+        exit;
+    }
 }
 
-$select_voters = mysqli_query($con,"SELECT * FROM voters");
-$total_voters = mysqli_num_rows($select_voters);
+$stmt = $con->prepare("SELECT COUNT(id) as total_voters FROM voters");
+$stmt->execute();
+$stmt->bind_result($total_voters);
+$stmt->fetch();
+$stmt->close();
 
-$done_voters = mysqli_query($con,"SELECT * FROM voters WHERE status = '3'");
-$total_done_voters = mysqli_num_rows($done_voters);
+$stmt = $con->prepare("SELECT COUNT(id) as total_voters_registered FROM voters_data");
+$stmt->execute();
+$stmt->bind_result($total_voters_registered);
+$stmt->fetch();
+$stmt->close();
+
+$stmt = $con->prepare("SELECT COUNT(id) as total_done_voters FROM voters_data WHERE status = 3");
+$stmt->execute();
+$stmt->bind_result($total_done_voters);
+$stmt->fetch();
+$stmt->close();
+
+$voters_percent = $total_voters_registered > 0 ? round(($total_done_voters / $total_voters) * 100, 2) : 0;
+
 
 ?>
 <!DOCTYPE html>
@@ -147,11 +228,14 @@ function timer() {
 			<div class="container nav-container"> 
 				<ul class="menu">
 					<li class="current">
-						<a href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
+						<a class="text-primary" href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
 					</li>
 					<li>
 						<a href="vusers"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">الأعضاء</span></a>
 					</li>
+                    <li>
+                        <a href="vcandidates"><i class="ico mdi mdi-account-multiple"></i><span style="font-weight: bold;">المرشحون</span></a>
+                    </li>
 					<li>
 						<a href="statistics"><i class="ico mdi mdi-chart-bar"></i><span style="font-weight: bold;">الإحصائيات</span></a>
 					</li>
@@ -170,80 +254,116 @@ function timer() {
 	</header>
 	<!-- /.fixed-header -->
 	<div class="main-content container">
-		<div class="row small-spacing">
-			<div class="col-md-6 col-xs-12">
-				<div class="box-content bg-primary text-white">
-					<div class="statistics-box with-icon">
-						<i class="ico small fa fa-users"></i>
-						<p class="text text-white" style="font-weight:bold;">إجمالي الناخبين</p>
-						<h2 class="counter"><?php echo $total_voters; ?></h2>
-					</div>
-				</div>
-				<!-- /.box-content -->
-			</div>
-			<!-- /.col-md-6 col-xs-12 -->
-			<div class="col-md-6 col-xs-12">
-				<div class="box-content bg-info text-white">
-					<div class="statistics-box with-icon">
-						<i class="ico small fa fa-check"></i>
-						<p class="text text-white" style="font-weight:bold;">إجمالي الأصوات</p>
-						<h2 class="counter"><?php echo $total_done_voters; ?></h2>
-					</div>
-				</div>
-				<!-- /.box-content -->
-			</div>
-			<!-- /.col-md-6 col-xs-12 -->
-		</div>
+        <div class="row small-spacing">
+
+            <div class="col-md-6 col-xs-12">
+                <div class="box-content bg-info text-white">
+                    <div class="statistics-box with-icon">
+                        <i class="ico small fa fa-users"></i>
+                        <p class="text text-white" style="font-weight:bold;">عدد الناخبين في السجل</p>
+                        <h2 class="counter"><?php echo $total_voters; ?></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xs-12">
+                <div class="box-content bg-primary text-white">
+                    <div class="statistics-box with-icon">
+                        <i class="ico small fa fa-file-text"></i>
+                        <p class="text text-white" style="font-weight:bold;">الناخبين المسجلين للتصويت</p>
+                        <h2 class="counter"><?php echo $total_voters_registered; ?></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xs-12">
+                <div class="box-content text-white <?php echo $total_done_voters != $total_voters_registered ? 'bg-danger' : 'bg-success'; ?>">
+                    <div class="statistics-box with-icon">
+                        <i class="ico small fa fa-check"></i>
+                        <p class="text text-white" style="font-weight:bold;">الناخبين الذين قاموا بالتصويت</p>
+                        <h2 class="counter"><?php echo $total_done_voters; ?></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xs-12">
+                <div class="box-content text-white <?php echo $voters_percent >= 50 ? 'bg-success' : 'bg-danger'; ?>">
+                    <div class="statistics-box with-icon">
+                        <i class="ico small fa fa-percent"></i>
+                        <p class="text text-white" style="font-weight:bold;">نسبة الناخبين الذين قاموا بالتصويت</p>
+                        <h2 class="counter"><?php echo $voters_percent; ?>%</h2>
+                    </div>
+                </div>
+            </div>
+
+        </div>
 		<!-- .row -->
 
 		<div class="row small-spacing">
 			<div class="col-xs-12">
-				<div class="box-content">
-					<h4 class="box-title">المراكز</h4>
-					<!-- /.box-title -->
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-danger">
+                        <?php echo $error_message; ?>
+                    </div>
+                <?php endif; ?>
+                <div class="box box-solid">
+                    <div class="box-header">
+                        <h4 class="box-title">المراكز</h4>
+                        <div class="box-tools">
+                            <button type="button" class="btn btn-icon btn-icon-left btn-info btn-xs waves-effect waves-light" id="add-location"><i class="ico fa fa-plus" style="margin: 0;"></i>إضافة مركز</button>
+                        </div>
+                    </div>
+                    <div class="box-content">
+                        <!-- /.box-title -->
 
-					<table id="main" class="table table-striped table-bordered display" style="width:100%">
-						<thead>
+                        <table id="main" class="table table-striped table-bordered display" style="width:100%">
+                            <thead>
+                            <tr>
+                                <!--<th>#</th>-->
+                                <th>الإسم</th>
+                                <th>الحالة</th>
+                                <th>البيانات</th>
+                                <th>الأوامر</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                            $select_locations = mysqli_query($con, "SELECT id, name, open FROM locations ORDER BY name ASC");
+
+                            while ($fetch_location = mysqli_fetch_assoc($select_locations)) {
+
+                                echo '
 							<tr>
-								<!--<th>#</th>-->
-								<th>الإسم</th>
-								<th>الحالة</th>
-								<th>البيانات</th>
-								<th>الأوامر</th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php
-							$select_locations = mysqli_query($con, "SELECT id, name, open FROM locations ORDER BY name ASC");
-
-							while($fetch_location = mysqli_fetch_assoc($select_locations)){
-
-							echo '
-							<tr>
-									<td>'.$fetch_location['name'].'</td>
-									<td>'.($fetch_location['open'] ? '<span class="label label-success">مفتوح</span>' : '<span class="label label-danger">مغلق</span>').'</td>
+									<td>' . $fetch_location['name'] . '</td>
+									<td>' . ($fetch_location['open'] ? '<span class="label label-success">مفتوح</span>' : '<span class="label label-danger">مغلق</span>') . '</td>
 									<td>
-										<a class="btn btn-default btn-icon btn-sm btn-icon-left" role="button" href="voters?l='.$fetch_location['id'].'"><i class="ico mdi mdi-account"></i>بيانات الناخبين</a>
-										<a class="btn btn-default btn-icon btn-sm btn-icon-left" role="button" href="vscreens?l='.$fetch_location['id'].'"><i class="ico mdi mdi-monitor-multiple"></i>صفحات الإقتراع</a>
+										<a class="btn btn-default btn-icon btn-sm btn-icon-left" role="button" href="voters?l=' . $fetch_location['id'] . '"><i class="ico mdi mdi-account"></i>بيانات الناخبين</a>
+										<a class="btn btn-default btn-icon btn-sm btn-icon-left" role="button" href="vscreens?l=' . $fetch_location['id'] . '"><i class="ico mdi mdi-monitor-multiple"></i>صفحات الإقتراع</a>
 									</td>
 									<td><form method="POST">
-										<input type="hidden" name="locationId" value="'.$fetch_location['id'].'">
+										<input type="hidden" name="locationId" value="' . $fetch_location['id'] . '">
 										<input type="hidden" name="reason" value="">'
-									.(
-										$fetch_location['open'] ? 
-										'<button type="submit" data-confirmed="" name="close-location" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light"><i class="ico fa fa-times"></i>إغلاق المركز</button>' 
-										: '<button type="submit" name="open-location" class="btn btn-icon btn-icon-left btn-info btn-xs waves-effect waves-light"><i class="ico fa fa-check"></i>فتح المركز</button>' 
-									).'
+                                    . (
+                                    $fetch_location['open'] ?
+                                        '<button type="submit" data-confirmed="" name="close-location" class="btn btn-icon btn-icon-left btn-warning btn-xs waves-effect waves-light"><i class="ico fa fa-times"></i>إغلاق المركز</button>'
+                                        : '<button type="submit" name="open-location" class="btn btn-icon btn-icon-left btn-info btn-xs waves-effect waves-light"><i class="ico fa fa-check"></i>فتح المركز</button>'
+                                    ) . '
+								    <button type="button" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light delete-location" data-id="' . $fetch_location['id'] . '">
+								    <i class="ico fa fa-trash"></i>حذف المركز
+								    </button>
 									</form></td>
 							</tr>
 							';
-							}
-							?>
-						</tbody>
-					</table>
+                            }
+                            ?>
+                            </tbody>
+                        </table>
 
-				</div>
-        <span id="timer"></span>
+                    </div>
+                    <div class="box-footer">
+                        <span id="timer"></span>
+                    </div>
+                </div>
 				<!-- /.box-content -->
 			</div>
 		</div>
@@ -277,6 +397,98 @@ function timer() {
 	<script src="assets/scripts/datatables.demo.min.js"></script>
 
 	<script>
+
+    $('#add-location').on('click', function (e) {
+        swal({
+            title: "إضافة مركز",
+            text: "إسم المركز",
+            type: 'input',
+            showCancelButton: true,
+            closeOnConfirm: false,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "إضافة",
+            cancelButtonText: "إلغاء",
+            showLoaderOnConfirm: true
+        }, function (inputValue) {
+            if (inputValue === false) {
+                return false;
+            }
+            if (inputValue === "") {
+                swal.showInputError("يجب إدخال إسم المركز");
+                return false
+            }
+            $.ajax({
+                url: 'vadmin.php',
+                type: 'POST',
+                data: {
+                    action: 'add-location',
+                    name: inputValue
+                },
+                success: function (data) {
+                    if (data === 'success') {
+                        swal({
+                            title: "تمت العملية بنجاح",
+                            text: "تم إضافة المركز بنجاح",
+                            type: "success",
+                            showCancelButton: false,
+                            showConfirmButton: false,
+                        });
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        swal("حدث خطأ", "حدث خطأ أثناء إضافة المركز", "error");
+                    }
+                },
+                error: function () {
+                    swal("حدث خطأ", "حدث خطأ أثناء إضافة المركز", "error");
+                }
+            });
+        });
+    });
+
+    $('.delete-location').on('click', function (e) {
+        let $this = $(this);
+        swal({
+            title: "هل أنت متأكد؟",
+            text: "سيتم حذف المركز وجميع البيانات المرتبطة به",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "نعم، حذف",
+            cancelButtonText: "إلغاء",
+            closeOnConfirm: false,
+            showLoaderOnConfirm: true
+        }, function () {
+            $.ajax({
+                url: 'vadmin.php',
+                type: 'POST',
+                data: {
+                    action: 'delete-location',
+                    id: $this.data('id')
+                },
+                success: function (data) {
+                    if (data === 'success') {
+                        swal({
+                            title: "تمت العملية بنجاح",
+                            text: "تم حذف المركز بنجاح",
+                            type: "success",
+                            showCancelButton: false,
+                            showConfirmButton: false,
+                        });
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        swal("حدث خطأ", "حدث خطأ أثناء حذف المركز", "error");
+                    }
+                },
+                error: function () {
+                    swal("حدث خطأ", "حدث خطأ أثناء حذف المركز", "error");
+                }
+            });
+        });
+    });
 
 	$('#main').DataTable( {
     language: {

@@ -1,4 +1,5 @@
 <?php
+global $con;
 include 'config.php';
 ?>
 <!DOCTYPE html>
@@ -68,24 +69,47 @@ include 'config.php';
 	<div class="main-content container">
 		<div class=”float-button”></div>
 
-		<div class="row small-spacing">
-			<?php
-			$select_candidates = mysqli_query($con, "SELECT * FROM candidates ORDER BY name");
-			while($fetch_candidates = mysqli_fetch_assoc($select_candidates)){
+        <?php
 
-			echo '
-			<div class="col-lg-3 col-md-6">
-				<div class="box-contact">
-					<img src="'.$fetch_candidates['img'].'" alt="" class="avatar">
-					<h3 class="name margin-top-10">'.$fetch_candidates['name'].'</h3>
-				
-				</div>
-			</div>
-
-			';
-			}
-			?>
-		</div>
+        // build candidates avatars with names grouped by their position
+        $select_positions = mysqli_query($con, "SELECT p.name positionName , c.name name, c.img img FROM positions p JOIN candidates c ON p.id = c.positionId ORDER BY p.order, c.name");
+        $positions = [];
+        while ($fetch_positions = mysqli_fetch_assoc($select_positions)) {
+            $positions[$fetch_positions['positionName']][] = ['name' => $fetch_positions['name'], 'img' => $fetch_positions['img']];
+        }
+        for ($i = 0; $i < count($positions); $i++):
+            ?>
+            <div class="row small-spacing">
+                <div class="col-xs-12">
+                    <div class="box-content"
+                         style="background: initial; border: initial; -webkit-box-shadow: none; box-shadow: none;">
+                        <h2 class="box-title" style="font-size: 30px;"><?php echo array_keys($positions)[$i]; ?></h2>
+                        <div class="row">
+                            <?php
+                            for ($j = 0; $j < count($positions[array_keys($positions)[$i]]); $j++):
+                                ?>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="box-contact">
+                                        <img src="<?php echo $positions[array_keys($positions)[$i]][$j]['img']; ?>"
+                                             alt="" class="avatar">
+                                        <h3 class="name margin-top-10">
+                                            <?php echo $positions[array_keys($positions)[$i]][$j]['name']; ?>
+                                        </h3>
+                                    </div>
+                                </div>
+                            <?php
+                            endfor;
+                            ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php
+            if ($i < count($positions) - 1) {
+                echo '<hr />';
+            }
+        endfor;
+        ?>
 	</div>
 	<!-- /.main-content -->
 </div><!--/#wrapper -->
