@@ -26,7 +26,7 @@ $dotenv->required('WS_URL');
 $dotenv->required('INTERNAL_WS_URL');
 
 // define variables
-define('IS_LOCALHOST', !strpos($_SERVER['HTTP_HOST'], 'localhost') !== false);
+define('IS_LOCALHOST', str_contains($_SERVER['HTTP_HOST'], 'localhost'));
 define('WS_URL', $_ENV['WS_URL']);
 define('INTERNAL_WS_URL', $_ENV['INTERNAL_WS_URL']);
 // check if local environment then use local domain for cookies
