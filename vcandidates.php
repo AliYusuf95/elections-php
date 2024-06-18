@@ -398,33 +398,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
                             </thead>
                             <tbody>
                             <?php
-                            $select_positions = mysqli_query($con, "SELECT positions.id id, positions.name as name, positions.maxVotes as maxVotes, count(candidates.id) candidates_count FROM positions LEFT JOIN candidates ON positions.id = candidates.positionId GROUP BY positions.id, positions.name ORDER BY positions.order ASC");
-                            $fetch_position = mysqli_fetch_all($select_positions, MYSQLI_ASSOC);
-                            // use index for loop
-                            foreach ($fetch_position as $position):
+                            $stmt = $con->prepare("SELECT positions.id as positions_id, positions.name as positions_name, positions.maxVotes as maxVotes, count(candidates.id) candidates_count FROM positions LEFT JOIN candidates ON positions.id = candidates.positionId GROUP BY positions.id, positions.name ORDER BY positions.order ASC");
+                            $stmt->execute();
+                            $stmt->bind_result($id, $name, $maxVotes, $candidates_count);
+                            $fetch_position = [];
+                            while ($stmt->fetch()):
+                                $fetch_position[] = ['id' => $id, 'name' => $name, 'maxVotes' => $maxVotes, 'candidates_count' => $candidates_count];
                                 ?>
                                 <tr>
                                     <td data-dt-order="icon-only"></td>
-                                    <td><?php echo $position['id']; ?></td>
-                                    <td><?php echo $position['name']; ?></td>
-                                    <td><?php echo $position['candidates_count']; ?></td>
-                                    <td><?php echo $position['maxVotes']; ?></td>
+                                    <td><?php echo $id; ?></td>
+                                    <td><?php echo $name; ?></td>
+                                    <td><?php echo $candidates_count; ?></td>
+                                    <td><?php echo $maxVotes; ?></td>
                                     <?php if ($isAllLocationsClosed): ?>
                                         <td>
                                         <button class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light delete-position"
-                                                data-id="<?php echo $position['id']; ?>"
-                                                data-name="<?php echo $position['name']; ?>"
+                                                data-id="<?php echo $id; ?>"
+                                                data-name="<?php echo $name; ?>"
                                         ><i class="ico fa fa-trash"></i>حذف المنصب
                                         </button>
                                         <button class="btn btn-icon btn-icon-left btn-info btn-xs waves-effect waves-light change-max-votes"
-                                                data-id="<?php echo $position['id']; ?>"
-                                                data-name="<?php echo $position['name']; ?>"
+                                                data-id="<?php echo $id; ?>"
+                                                data-name="<?php echo $name; ?>"
                                         ><i class="ico fa fa-edit"></i>تغيير عدد الأصوات
                                         </button>
                                         </td><?php endif; ?>
                                 </tr>
                             <?php
-                            endforeach;
+                            endwhile;
+                            $stmt->close();
                             ?>
                             </tbody>
                         </table>
