@@ -17,8 +17,9 @@ $voting_results_table = 'voting_results';
 $voters_data_table = 'voters_data';
 $voter_form_fields = array('name', 'mobile');
 $voter_required_fields = array('cpr', 'screen');
-$accept_only_from_voters_table = true;
 $users_table = 'users';
+$accept_only_from_voters_table = true;
+$max_voting_age = 16;
 
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || !isset($_SESSION["id"])){
@@ -336,37 +337,44 @@ function timer() {
 			if(isset($_POST['check_voter']) && isset($_POST['cpr'])) {
 
 				try {
-					preg_match('/(\d{2})(\d{2})\d{5}/', $_POST['cpr'], $cpr_match);
+                    if (!$accept_only_from_voters_table) {
+                        preg_match('/(\d{2})(\d{2})\d{5}/', $_POST['cpr'], $cpr_match);
 
-					if (count($cpr_match) != 3) {
-						throw new Exception('الرقم الشخصي غير صحيح');
-					}
+                        if (count($cpr_match) != 3) {
+                            throw new Exception('الرقم الشخصي غير صحيح');
+                        }
+                        // get last 2 digits of the current year
+                        $current_year = intval(date('Y'));
+                        $current_month = intval(date('n'));
+                        $max_voting_year = $current_year - $max_voting_age;
 
-					$year = intval($cpr_match[1]);
-					$month = intval($cpr_match[2]);
-					$year += $year <= 22 ? 2000 : 1900;
+                        $year = intval($cpr_match[1]);
+                        $month = intval($cpr_match[2]);
 
-					if ($month == 0 || $month > 12) {
-						throw new Exception('الرقم الشخصي غير صحيح');
-					}
+                        if ($month < 0 || $month > 12) {
+                            throw new Exception('الرقم الشخصي غير صحيح');
+                        }
 
-					if ($year > 2006 || ($year == 2006 && $month > 9)) {
-						throw new Exception('غير مسموح بالتصويت، العمر اصغر من 16 عام');
-					}
+                        $year += $year <= 22 ? 2000 : 1900;
+                        if ($year > $max_voting_year || ($year == $max_voting_year && $month > $current_month)) {
+                            throw new Exception("غير مسموح بالتصويت، العمر اصغر من " . $max_voting_age . " عام");
+                        }
+                    }
 
+                    $cpr = trim($_POST['cpr']);
 					$check_error = null;
-					$stmt = mysqli_prepare($con, "SELECT id FROM $voters_data_table WHERE cpr = ?");
-					mysqli_stmt_bind_param($stmt, "s", $_POST['cpr']);
+					$stmt = mysqli_prepare($con, "SELECT id FROM $voters_data_table WHERE TRIM(cpr) = ?");
+					mysqli_stmt_bind_param($stmt, "s", $cpr);
 					if(!mysqli_stmt_execute($stmt)) {
 						$check_error = 'حدث خطأ، يرجى المحاولة مجددا';
 					} else {
 						mysqli_stmt_store_result($stmt);
 						if( mysqli_stmt_num_rows($stmt) > 0) {
-							$check_error = 'الناخب صاحب الرقم '. $_POST['cpr'] .' صوت مسبقاً';
+							$check_error = 'الناخب صاحب الرقم '. $cpr .' صوت مسبقاً';
 						}
 						mysqli_stmt_close($stmt);
-                        $stmt = $con->prepare("SELECT ".implode(',', $voter_form_fields)." FROM $voters_table WHERE cpr = ?");
-                        $stmt->bind_param('s', $_POST['cpr']);
+                        $stmt = $con->prepare("SELECT ".implode(',', $voter_form_fields)." FROM $voters_table WHERE TRIM(cpr) = ?");
+                        $stmt->bind_param('s', $cpr);
                         $stmt->execute();
                         $res = $stmt->get_result();
 						if (!$res || !($check_user = $res->fetch_assoc())) {
@@ -401,13 +409,15 @@ function timer() {
                     $cpr = trim($_POST['cpr']);
                     $screen_id = trim($_POST['screen']);
 
-                    // validate cpr
-                    preg_match('/(\d{2})(\d{2})\d{5}/', $cpr, $cpr_match);
-                    if (count($cpr_match) != 3) {
-                        throw new Exception('الرقم الشخصي غير صحيح');
+                    if (!$accept_only_from_voters_table) {
+                        // validate cpr
+                        preg_match('/(\d{2})(\d{2})\d{5}/', $cpr, $cpr_match);
+                        if (count($cpr_match) != 3) {
+                            throw new Exception('الرقم الشخصي غير صحيح');
+                        }
                     }
 
-                    $stmt = $con->prepare("SELECT id FROM $voters_table WHERE cpr = ?");
+                    $stmt = $con->prepare("SELECT id FROM $voters_table WHERE TRIM(cpr) = ?");
                     $stmt->bind_param('s', $cpr);
                     $stmt->execute();
                     $stmt->bind_result($voter_id);

@@ -60,17 +60,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newUserForm['data']['password'] = trim($_POST["password"]);
         $newUserForm['data']['confirm_password'] = trim($_POST["confirm_password"]);
 
+        if (empty(trim($newUserForm['data']['name']))) {
+            $newUserForm['errors']['name'] = "يرجى إدخال الإسم.";
+        }
+
         if(empty($newUserForm['data']['password'])){
-            $newUserForm['errors']['password'] = "Please enter a password.";
+            $newUserForm['errors']['password'] = "يرجى إدخال كلمة السر.";
         } elseif(strlen($newUserForm['data']['password']) < 6){
-            $newUserForm['errors']['password'] = "Password must have atleast 6 characters.";
+            $newUserForm['errors']['password'] = "يجب أن تكون كلمة السر 6 أحرف على الأقل.";
         }
 
         // Validate confirm password
         if(empty($newUserForm['data']['confirm_password'])){
-            $newUserForm['errors']['confirm_password'] = "Please confirm password.";
+            $newUserForm['errors']['confirm_password'] = "يرجى تأكيد كلمة السر.";
         } else if ($newUserForm['data']['password'] != $newUserForm['data']['confirm_password']) {
-            $newUserForm['errors']['confirm_password'] = "Password did not match.";
+            $newUserForm['errors']['confirm_password'] = "كلمة السر غير متطابقة.";
         }
 
         // check username is used
@@ -79,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         $stmt->store_result();
         if ($stmt->num_rows > 0) {
-            $newUserForm['errors']['username'] = "This username is already taken.";
+            $newUserForm['errors']['username'] = "إسم المستخدم مستخدم بالفعل.";
         }
         $stmt->close();
 
@@ -402,31 +406,31 @@ $total_users_not_assigned = mysqli_num_rows(mysqli_query($con, "SELECT * FROM us
             </div>
             <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" autocomplete="off">
                 <div class="modal-body">
-                    <div class="form-group <?php echo (!empty($name_err)) ? 'has-error' : ''; ?>">
+                    <div class="form-group <?php echo (!empty($newUserForm['errors']['name'])) ? 'has-error' : ''; ?>">
                         <label>الإسم</label>
                         <input type="text" name="name" data-1p-ignore class="form-control"
-                               value="<?php echo $newUserForm['data']['name']; ?>" autocomplete="false">
-                        <span class="help-block"><?php echo $newUserForm['errors']['name']; ?></span>
+                               value="<?php echo $newUserForm['data']['name'] ?? ''; ?>" autocomplete="false">
+                        <span class="help-block"><?php echo $newUserForm['errors']['name'] ?? ''; ?></span>
                     </div>
                     <div class="form-group <?php echo (!empty($newUserForm['errors']['username'])) ? 'has-error' : ''; ?>">
                         <label>إسم المستخدم</label>
                         <input type="text" name="username" data-1p-ignore class="form-control"
-                               value="<?php echo $newUserForm['data']['username']; ?>"
+                               value="<?php echo $newUserForm['data']['username'] ?? ''; ?>"
                                autocomplete="false" required>
-                        <span class="help-block"><?php echo $newUserForm['errors']['username']; ?></span>
+                        <span class="help-block"><?php echo $newUserForm['errors']['username'] ?? ''; ?></span>
                     </div>
                     <div class="form-group <?php echo (!empty($newUserForm['errors']['password'])) ? 'has-error' : ''; ?>">
                         <label>كلمة السر</label>
-                        <input type="password" name="password" class="form-control"
-                               value="<?php echo $newUserForm['data']['password']; ?>"
-                               autocomplete="false" required>
-                        <span class="help-block"><?php echo $newUserForm['errors']['password']; ?></span>
+                        <input type="password" name="password" data-1p-ignore class="form-control"
+                               value="<?php echo $newUserForm['data']['password'] ?? ''; ?>"
+                               autocomplete="one-time-code" required>
+                        <span class="help-block"><?php echo $newUserForm['errors']['password'] ?? ''; ?></span>
                     </div>
                     <div class="form-group <?php echo (!empty($newUserForm['errors']['confirm_password'])) ? 'has-error' : ''; ?>">
                         <label>تأكيد كلمة السر</label>
-                        <input type="password" name="confirm_password" autocomplete="false" class="form-control"
-                               value="<?php echo $newUserForm['data']['confirm_password']; ?>" required>
-                        <span class="help-block"><?php echo $newUserForm['errors']['confirm_password']; ?></span>
+                        <input type="password" name="confirm_password" autocomplete="one-time-code" class="form-control" data-1p-ignore
+                               value="<?php echo $newUserForm['data']['confirm_password'] ?? ''; ?>" required>
+                        <span class="help-block"><?php echo $newUserForm['errors']['confirm_password'] ?? ''; ?></span>
                     </div>
                 </div>
                 <div class="modal-footer">

@@ -47,6 +47,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->close();
 
+            // insert voting submission JSON record [{positionId: 1, positionName: '...', candidates: [{id: 1, name: '...'}, ...]}, ...]
+            $stmt = $con->prepare("INSERT INTO voting_submissions (submission, createdAt, updatedAt) 
+            SELECT JSON_ARRAYAGG(item) submissions, NOW() createdAt, NOW() updatedAt 
+            FROM (
+                SELECT JSON_OBJECT('positionId', p.id, 'positionName', p.name, 'candidates', JSON_ARRAYAGG(JSON_OBJECT('id', c.id, 'name', c.name))) item 
+                FROM positions p JOIN candidates c ON c.positionId = p.id 
+                WHERE c.id IN (" . implode(',', array_fill(0, count($candidates), '?')) . ") 
+                GROUP BY p.id
+            ) items");
+            $stmt->bind_param(str_repeat('s', count($candidates)), ...$candidates);
+            $stmt->execute();
+            $stmt->close();
+
             $con->commit();
             $csrf->clearHashes('vote-form');
             $show_success = true;

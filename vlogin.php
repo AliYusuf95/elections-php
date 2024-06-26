@@ -175,15 +175,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <div class="form-box">
                         <h4>يرجى تسجيل الدخول لإستخدام النظام</h4>
                         <br />
-                        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+                        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" autocomplete="off">
                             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
                                 <label>إسم المستخدم</label>
-                                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>">
+                                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>" autocomplete="false" data-1p-ignore>
                                 <span class="help-block"><?php echo $username_err; ?></span>
                             </div>
                             <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
                                 <label>الرقم السري</label>
-                                <input type="password" name="password" class="form-control">
+                                <input type="password" name="password" class="form-control" autocomplete="one-time-code" data-1p-ignore>
                                 <span class="help-block"><?php echo $password_err; ?></span>
                             </div>
                             <div class="form-group">

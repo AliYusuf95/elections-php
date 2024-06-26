@@ -1,3 +1,4 @@
+name: elections
 services:
 
   mariadb:
@@ -27,6 +28,7 @@ services:
 
   web:
     build: .
+    restart: always
     ports:
       - "8111:80"
     volumes:
@@ -37,6 +39,7 @@ services:
 
   ws:
     build: ../elections-ws
+    restart: always
     ports:
       - "8113:3000"
     volumes:

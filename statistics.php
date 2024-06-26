@@ -93,6 +93,9 @@ if ($isAllLocationsClosed) {
 	<link rel="stylesheet" href="assets/plugin/fullcalendar/fullcalendar.min.css">
 	<link rel="stylesheet" href="assets/plugin/fullcalendar/fullcalendar.print.css" media='print'>
 
+    <!-- Data Tables -->
+    <link rel="stylesheet" href="assets/plugin/datatables/media/css/dataTables.bootstrap.min.css">
+
 	<!-- RTL -->
 	<link rel="stylesheet" href="assets/styles/style-rtl.min.css">
     <style>
@@ -252,21 +255,26 @@ if ($isAllLocationsClosed) {
 								<th></th>
 								<th>الإسم</th>
 								<th>عدد الأصوات</th>
-							</tr>
+								<th>المنصب</th>
+								<th>اسم المنصب</th>
+                                <th>ترتيب المنصب</th>
+                            </tr>
 						</thead>
 						<tbody>
 							<?php
-							
-							$select_candidates = mysqli_query($con, "SELECT c.name as name, v.votes as votes FROM candidates c LEFT JOIN voting_results v ON c.id = v.candidateId ORDER BY c.name");
-                            
-							while($fetch_candidates = mysqli_fetch_assoc($select_candidates)){
-
-							echo '<tr>
-									<td></td>
-									<td>'.$fetch_candidates['name'].'</td>
-									<td>'.($fetch_candidates['votes'] ?? 0).'</td>
-									</tr>';
-							}
+                            $select_candidates_by_position = mysqli_query($con, "SELECT p.id positionId, p.order positionOrder, p.name positionName, c.name as name, IFNULL(v.votes, 0) as votes FROM candidates c JOIN positions p ON c.positionId = p.id LEFT JOIN voting_results v ON c.id = v.candidateId ORDER BY p.order, c.name");
+							while($fetch_candidates = mysqli_fetch_assoc($select_candidates_by_position)):
+							?>
+                            <tr data-position-name="<?php echo $fetch_candidates['positionName']; ?>">
+                                <td></td>
+                                <td><?php echo $fetch_candidates['name']; ?></td>
+                                <td><?php echo $fetch_candidates['votes']; ?></td>
+                                <td><?php echo $fetch_candidates['positionId']; ?></td>
+                                <td><?php echo $fetch_candidates['positionName']; ?></td>
+                                <td><?php echo $fetch_candidates['positionOrder']; ?></td>
+                            </tr>
+                            <?php
+                            endwhile;
 							?>
 						</tbody>
 					</table>
@@ -330,6 +338,7 @@ if ($isAllLocationsClosed) {
 	<script src="assets/plugin/datatables/media/js/dataTables.bootstrap.min.js"></script>
 	<script src="assets/plugin/datatables/extensions/Responsive/js/dataTables.responsive.min.js"></script>
 	<script src="assets/plugin/datatables/extensions/Responsive/js/responsive.bootstrap.min.js"></script>
+	<script src="assets/plugin/datatables/extensions/RowGroup/js/dataTables.rowGroup.min.js"></script>
 	<script src="assets/scripts/datatables.demo.min.js"></script>
 
     <!-- Chartist -->
@@ -353,8 +362,26 @@ if ($isAllLocationsClosed) {
                     next: "التالي",
                     last: "الأخير"
                 },
+            },
+            order: [
+                [2, 'desc'],
+                [1, 'asc'],
+            ],
+            orderFixed: [5, 'asc'],
+            columnDefs: [
+                {targets: [3,4,5], visible: false},
+                {orderable: false, targets: 0}
+            ],
+            rowGroup: {
+                dataSrc: 3,
+                startRender: function (rows, group) {
+                    let data = rows.data();
+                    if (data[0] && data[0][4]) {
+                        return data[0][4];
+                    }
+                    return group;
+                }
             }
-
         });
         t.on('order.dt search.dt', function () {
             let i = 1;
@@ -364,7 +391,7 @@ if ($isAllLocationsClosed) {
             });
         }).draw();
 
-        <? if ($isAllLocationsClosed): ?>
+        <?php if ($isAllLocationsClosed): ?>
         // draw line chart with number of voters in that hour
         new Chartist.Line('#voters-volume-chart', {
             labels: ['6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM', '8 PM', '9 PM'],
@@ -407,7 +434,7 @@ if ($isAllLocationsClosed) {
                 }
             }]
         ]);
-        <? endif; ?>
+        <?php endif; ?>
     </script>
 
 	<script src="assets/scripts/main.min.js"></script>
