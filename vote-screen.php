@@ -48,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
 
             // insert voting submission JSON record [{positionId: 1, positionName: '...', candidates: [{id: 1, name: '...'}, ...]}, ...]
-            $stmt = $con->prepare("INSERT INTO voting_submissions (submission, createdAt, updatedAt) 
-            SELECT JSON_ARRAYAGG(item) submissions, NOW() createdAt, NOW() updatedAt 
+            $stmt = $con->prepare("INSERT INTO voting_submissions (id, submission) 
+            SELECT uuid() id, JSON_ARRAYAGG(item) submissions
             FROM (
                 SELECT JSON_OBJECT('positionId', p.id, 'positionName', p.name, 'candidates', JSON_ARRAYAGG(JSON_OBJECT('id', c.id, 'name', c.name))) item 
                 FROM positions p JOIN candidates c ON c.positionId = p.id 
