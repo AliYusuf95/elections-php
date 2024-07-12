@@ -97,8 +97,7 @@ if(!isset($location_error)) {
     }
     $stmt->execute();
     $stmt->store_result();
-    $stmt->bind_result($pending_voters);
-    $stmt->fetch();
+    $pending_voters = $stmt->num_rows;
     $stmt->close();
 
     if ($location_id == 'all') {
@@ -109,8 +108,7 @@ if(!isset($location_error)) {
     }
     $stmt->execute();
     $stmt->store_result();
-    $stmt->bind_result($done_voters);
-    $stmt->fetch();
+    $done_voters = $stmt->num_rows;
     $stmt->close();
 }
 
@@ -300,7 +298,13 @@ $current_time = date("h:i:s A");
 			<div class="row small-spacing">
 				<div class="col-xs-12">
 					<div class="box-content">
-						<h4 class="box-title">الناخبين المسجلين في هذا المركز</h4>
+						<h4 class="box-title">
+                            <?php if ($location_id != 'all'): ?>
+                            الناخبين المسجلين في هذا المركز
+                            <?php else: ?>
+                            قائمة الناخبين
+                            <?php endif; ?>
+                        </h4>
 						<br />
 						<!-- /.box-title -->
 						<table id="main" class="table table-striped table-bordered display" style="width:100%">
