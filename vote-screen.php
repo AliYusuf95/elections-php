@@ -24,8 +24,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sessionId = $_POST['sessionId'];
         $con->begin_transaction();
         try {
-            if(count($candidates) > 10) {
-                throw new Exception('يمكن التصويت إلى 10 مرشحين كحد أقصى، يرجى المحاولة مجدداً');
+            // select candidates positions, then check if number of candidates selected is less than position max votes
+            $clause = implode(',', array_fill(0, count($candidates), '?'));
+            $bindString = str_repeat('s', count($candidates));
+            $stmt = $con->prepare("SELECT c.id, p.id, p.maxVotes FROM positions p JOIN candidates c ON p.id = c.positionId WHERE c.id IN ($clause)");
+            $stmt->bind_param($bindString, ...$candidates);
+            $stmt->execute();
+            $stmt->bind_result($candidate, $position, $maxVotes);
+            $candidates_by_position = [];
+            while ($stmt->fetch()) {
+                if ($candidates_by_position[$position] === null) {
+                    $candidates_by_position[$position] = array(
+                        'candidates' => array(),
+                        'maxVotes' => $maxVotes
+                    );
+                }
+                if (!in_array($candidate, $candidates_by_position[$position]['candidates'])) {
+                    $candidates_by_position[$position]['candidates'][] = $candidate;
+                }
+            }
+            $stmt->close();
+
+            foreach ($candidates_by_position as $position => $item) {
+                if (count($item['candidates']) > $item['maxVotes']) {
+                    throw new Exception('يمكن التصويت إلى ' . $item['maxVotes'] . ' مرشحين كحد أقصى، يرجى المحاولة مجدداً');
+                }
             }
 
             $stmt = $con->prepare("UPDATE voters_data v JOIN screens s ON s.voterId = v.voterId SET v.status = 3, v.updatedAt = CURRENT_TIMESTAMP(), s.voterId = null WHERE v.status = 2 AND s.sessionId = ?");

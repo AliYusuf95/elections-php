@@ -9,15 +9,12 @@ $location_name = '';
 $location_error = null;
 $isAdmin = false;
 
-$voters_data_table = 'voters_data';
-$users_table = 'users';
-
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: vlogin.php");
     exit;
 } else if(isset($_SESSION["user"]) && $_SESSION["user"] === true) {
-    $select_user_Location = mysqli_query($con, "SELECT locationId FROM $users_table WHERE id = " . $_SESSION["id"]);
+    $select_user_Location = mysqli_query($con, "SELECT locationId FROM users WHERE id = " . $_SESSION["id"]);
     $location_id = mysqli_fetch_row($select_user_Location)[0];
 } else if (isset($_SESSION["admin"]) && $_SESSION["admin"] === true && isset($_GET["l"])) {
     $isAdmin = true;
@@ -29,6 +26,11 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
 
 function getLocationInfo() {
     global $con, $location_id, $location_name, $location_error;
+
+    if ($location_id == 'all') {
+        $location_name = 'بيانات الناخبين في جميع المراكز';
+        return;
+    }
     
     $sql = "SELECT name FROM locations WHERE id = ?";
 
@@ -58,11 +60,58 @@ function getLocationInfo() {
 getLocationInfo();
 
 if(!isset($location_error)) {
-	$select_voters = mysqli_query($con,"SELECT v.id AS id, v.name AS name, v.fromwhere AS fromwhere, v.cpr AS cpr, v.status AS status, v.updatedAt AS updatedAt,
-	 u.name AS user_name, u.username AS username FROM $voters_data_table v LEFT JOIN $users_table u ON v.userId = u.id WHERE v.locationId = ". $location_id);
-	$total_voters = mysqli_num_rows($select_voters);
-	$pending_voters = mysqli_num_rows(mysqli_query($con,"SELECT id FROM $voters_data_table WHERE status = '2' AND locationId = ". $location_id));
-	$done_voters = mysqli_num_rows(mysqli_query($con,"SELECT id FROM $voters_data_table WHERE status = '3' AND locationId = ". $location_id));
+    if ($location_id == 'all') {
+        $stmt = $con->prepare("SELECT v.id AS id, v.name AS name, v.fromwhere AS fromwhere, v.cpr AS cpr, v.status AS status, v.updatedAt AS updatedAt,
+	 u.name AS user_name FROM voters_data v LEFT JOIN users u ON v.userId = u.id");
+    } else {
+        $stmt = $con->prepare("SELECT v.id AS id, v.name AS name, v.fromwhere AS fromwhere, v.cpr AS cpr, v.status AS status, v.updatedAt AS updatedAt,
+	 u.name AS user_name FROM voters_data v LEFT JOIN users u ON v.userId = u.id WHERE v.locationId = ?");
+        $stmt->bind_param("i", $location_id);
+    }
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $votersData = [];
+    while ($row = $res->fetch_assoc()) {
+        $votersData[$row['cpr']] = $row;
+    }
+    $stmt->close();
+    $total_voters = count($votersData);
+
+    if ($location_id == 'all') {
+        $stmt = $con->prepare("SELECT v.id AS id, v.name AS name, v.fromwhere AS fromwhere, v.cpr AS cpr, 0 AS status, v.updatedAt AS updatedAt, null AS user_name FROM voters v");
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($row = $res->fetch_assoc()) {
+            if (!isset($votersData[$row['cpr']])) {
+                $votersData[$row['cpr']] = $row;
+            }
+        }
+        $stmt->close();
+    }
+
+    if ($location_id == 'all') {
+        $stmt = $con->prepare("SELECT id FROM voters_data WHERE status = '2'");
+    } else {
+        $stmt = $con->prepare("SELECT id FROM voters_data WHERE status = '2' AND locationId = ?");
+        $stmt->bind_param("i", $location_id);
+    }
+    $stmt->execute();
+    $stmt->store_result();
+    $stmt->bind_result($pending_voters);
+    $stmt->fetch();
+    $stmt->close();
+
+    if ($location_id == 'all') {
+        $stmt = $con->prepare("SELECT id FROM voters_data WHERE status = '3'");
+    } else {
+        $stmt = $con->prepare("SELECT id FROM voters_data WHERE status = '3' AND locationId = ?");
+        $stmt->bind_param("i", $location_id);
+    }
+    $stmt->execute();
+    $stmt->store_result();
+    $stmt->bind_result($done_voters);
+    $stmt->fetch();
+    $stmt->close();
 }
 
 $logged_user = $_SESSION['username'];
@@ -148,14 +197,17 @@ $current_time = date("h:i:s A");
 					<?php 
 						if($isAdmin == true):
 						?>
-							<li class="current">
-								<a class="text-primary" href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
+							<li>
+								<a <?php if($location_id != 'all'): ?> class="text-primary" <?php endif; ?> href="vadmin"><i class="ico mdi mdi-home"></i><span style="font-weight: bold;">المراكز</span></a>
 							</li>
 							<li>
 								<a href="vusers"><i class="ico mdi mdi-account"></i><span style="font-weight: bold;">الأعضاء</span></a>
 							</li>
                             <li>
                                 <a href="vcandidates"><i class="ico mdi mdi-account-multiple"></i><span style="font-weight: bold;">المرشحون</span></a>
+                            </li>
+                            <li>
+                                <a <?php if($location_id == 'all'): ?> class="text-primary" <?php endif; ?> href="voters?l=all"><i class="ico mdi mdi mdi-account-card-details"></i><span style="font-weight: bold;">الناخبين</span></a>
                             </li>
 							<li>
 								<a href="statistics"><i class="ico mdi mdi-chart-bar"></i><span style="font-weight: bold;">الإحصائيات</span></a>
@@ -212,7 +264,7 @@ $current_time = date("h:i:s A");
 						<div class="statistics-box with-icon">
 							<i class="ico small fa fa-users"></i>
 							<p class="text text-white" style="font-weight:bold;">إجمالي الناخبين</p>
-							<h2 class="counter"><?php echo $total_voters; ?></h2>
+							<h2 class="counter"><?php echo $total_voters ?: 0; ?></h2>
 						</div>
 					</div>
 					<!-- /.box-content -->
@@ -226,7 +278,7 @@ $current_time = date("h:i:s A");
 						<div class="statistics-box with-icon">
 							<i class="ico small fa fa-times"></i>
 							<p class="text text-white" style="font-weight:bold;">بإنتظار التصويت</p>
-							<h2 class="counter"><?php echo $pending_voters; ?></h2>
+							<h2 class="counter"><?php echo $pending_voters ?: 0; ?></h2>
 						</div>
 					</div>
 					<!-- /.box-content -->
@@ -237,7 +289,7 @@ $current_time = date("h:i:s A");
 						<div class="statistics-box with-icon">
 							<i class="ico small fa fa-check"></i>
 							<p class="text text-white" style="font-weight:bold;">تم التصويت</p>
-							<h2 class="counter"><?php echo $done_voters; ?></h2>
+							<h2 class="counter"><?php echo $done_voters ?: 0; ?></h2>
 						</div>
 					</div>
 					<!-- /.box-content -->
@@ -265,20 +317,25 @@ $current_time = date("h:i:s A");
 							</thead>
 							<tbody>
 								<?php
-
-								while($fetch_voter = mysqli_fetch_assoc($select_voters)){
-
-								echo '
-								<tr id="row-'.$fetch_voter['id'].'">
-										<td>'.$fetch_voter['id'].'</td>
-										<td>'.$fetch_voter['name'].'</td>
-										<td>'.$fetch_voter['cpr'].'</td>
-										<td>'.$fetch_voter['fromwhere'].'</td>
-										'.($fetch_voter['status'] == 3 ? "<td class='text-success'>تم التصويت</td>" : "<td class='text-warning'>بإنتظار التصويت</td>").'
-										<td>'.(empty($fetch_voter['user_name']) ? $fetch_voter['username'] : $fetch_voter['user_name']).'</td>
-										<td>'.$fetch_voter['updatedAt'].'</td>
-								';
-								}
+								foreach ($votersData as $voter):
+								?>
+                                <tr id="row-<?php echo $voter['id']; ?>">
+                                    <td><?php echo $voter['id']; ?></td>
+                                    <td><?php echo $voter['name']; ?></td>
+                                    <td><?php echo $voter['cpr']; ?></td>
+                                    <td><?php echo $voter['fromwhere']; ?></td>
+                                    <?php if($voter['status'] == 3): ?>
+                                    <td class="text-success">تم التصويت</td>
+                                    <?php elseif($voter['status'] == 2): ?>
+                                    <td class="text-warning">بإنتظار التصويت</td>
+                                    <?php else: ?>
+                                    <td>لم يصوت</td>
+                                    <?php endif; ?>
+                                    <td><?php echo $voter['user_name']; ?></td>
+                                    <td><?php echo $voter['updatedAt']; ?></td>
+                                </tr>
+                                <?php
+								endforeach;
 								?>
 							</tbody>
 						</table>
