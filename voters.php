@@ -75,7 +75,6 @@ if(!isset($location_error)) {
         $votersData[$row['cpr']] = $row;
     }
     $stmt->close();
-    $total_voters = count($votersData);
 
     if ($location_id == 'all') {
         $stmt = $con->prepare("SELECT v.id AS id, v.name AS name, v.fromwhere AS fromwhere, v.cpr AS cpr, 0 AS status, v.updatedAt AS updatedAt, null AS user_name FROM voters v");
@@ -88,6 +87,8 @@ if(!isset($location_error)) {
         }
         $stmt->close();
     }
+
+    $total_voters = count($votersData);
 
     if ($location_id == 'all') {
         $stmt = $con->prepare("SELECT id FROM voters_data WHERE status = '2'");
