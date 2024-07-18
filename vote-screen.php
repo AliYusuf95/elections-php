@@ -36,11 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_result($candidate, $position, $maxVotes);
                 $candidates_by_position = [];
                 while ($stmt->fetch()) {
-                    if ($candidates_by_position[$position] === null) {
-                        $candidates_by_position[$position] = array(
-                            'candidates' => array(),
+                    if (!isset($candidates_by_position[$position])) {
+                        $candidates_by_position[$position] = [
+                            'candidates' => [],
                             'maxVotes' => $maxVotes
-                        );
+                        ];
                     }
                     if (!in_array($candidate, $candidates_by_position[$position]['candidates'])) {
                         $candidates_by_position[$position]['candidates'][] = $candidate;
