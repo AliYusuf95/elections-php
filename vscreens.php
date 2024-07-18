@@ -9,22 +9,21 @@ $location_id = 0;
 $location_name = '';
 $location_error = null;
 $isAdmin = false;
+$isUser = false;
 
 $users_table = 'users';
 
-// Check if the user is logged in, if not then redirect him to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
-    header("location: vlogin.php");
-    exit;
-} else if(isset($_SESSION["user"]) && $_SESSION["user"] === true) {
+// Check if the user is logged in
+if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && isset($_SESSION["user"]) && $_SESSION["user"] === true) {
     $select_user_Location = mysqli_query($con, "SELECT locationId FROM $users_table WHERE id = " . $_SESSION["id"]);
     $location_id = mysqli_fetch_row($select_user_Location)[0];
-} else if (isset($_SESSION["admin"]) && $_SESSION["admin"] === true && isset($_GET["l"])) {
+    $isUser = true;
+} else if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && isset($_SESSION["admin"]) && $_SESSION["admin"] === true && isset($_GET["l"])) {
     $isAdmin = true;
     $location_id = $_GET["l"];
+    $isUser = true;
 } else {
-    header("location: vadmin.php");
-    exit;
+    $location_id = $_GET["l"];
 }
 
 function getLocationInfo() {
@@ -163,15 +162,18 @@ if(!isset($location_error)) {
 					<a class="logo" style="font-weight: bold;">نظام التصويت الإلكتروني</a>
 				</div>
 
+                <?php if($isUser): ?>
 				<div class="pull-left">
 					<a class="logo" style="font-size: 15px;">مرحبا <?php echo $logged_user; ?></a>
 				</div>
+                <?php endif; ?>
 				<!-- /.pull-right -->
 
 			</div>
 			<!-- /.container -->
 		</div>
 		<!-- /.header-top -->
+        <?php if($isUser): ?>
 		<nav class="nav nav-horizontal">
 			<button type="button" class="menu-close hidden-on-desktop js__close_menu"><i class="fa fa-times"></i><span>إغلاق</span></button>
 			<div class="container nav-container"> 
@@ -222,6 +224,7 @@ if(!isset($location_error)) {
 		</nav>
 		<!-- /.nav-horizontal -->
 	</header>
+    <?php endif; ?>
 	<!-- /.fixed-header -->
 
 	<?php	
@@ -294,9 +297,11 @@ if(!isset($location_error)) {
 			<div class="col-xs-12">
 				<div class="box-content">
 					<h4 class="box-title">صفحات الإقتراع المضافة للمركز</h4>
+                    <?php if($isUser): ?>
 					<p>
 						* 	عند الضغط على زر إزالة سيتم حذف الصفحة من المركز وإيقاف عملية الإقتراع فيها إن وجد
 					</p>
+                    <?php endif; ?>
 					<br />
 					<!-- /.box-title -->
 
@@ -308,7 +313,9 @@ if(!isset($location_error)) {
 								<th>حالة الإتصال</th>
 								<th>حالة الإشغال</th>
 								<th>آخر تحديث</th>
+                                <?php if($isUser): ?>
 								<th>الأوامر</th>
+                                <?php endif; ?>
 							</tr>
 						</thead>
 						<tbody>
@@ -321,6 +328,7 @@ if(!isset($location_error)) {
                                 <td><?php echo $fetch_screens['connected']; ?></td>
                                 <td><?php echo $fetch_screens['available']; ?></td>
                                 <td><?php echo $fetch_screens['updatedAt']; ?></td>
+                                <?php if($isUser): ?>
                                 <td>
                                     <div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light" style="width: 100px;" data-toggle="modal" data-target="#deleteModal" data-name="<?php echo $fetch_screens['name']; ?>" data-id="<?php echo $fetch_screens['id']; ?>"><i class="ico fa fa-times"></i>حذف</button></div>
                                     <?php
@@ -331,6 +339,7 @@ if(!isset($location_error)) {
                                     endif;
                                     ?>
                                 </td>
+                                <?php endif; ?>
                             </tr>
                             <?php
                             endwhile;
@@ -349,6 +358,7 @@ if(!isset($location_error)) {
 	endif; // end location error else
 	?>
 </div><!--/#wrapper -->
+<?php if($isUser): ?>
 	<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
@@ -412,6 +422,7 @@ if(!isset($location_error)) {
         </div>
     </div>
     <?php endif; ?>
+<?php endif; ?>
 	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
 	<!--[if lt IE 9]>
 		<script src="assets/script/html5shiv.min.js"></script>
@@ -458,6 +469,7 @@ if(!isset($location_error)) {
 			},
 			dom: 'Bfrtip',
 			buttons: [
+                <?php if($isUser): ?>
 				{
 					text: 'إضافة شاشة',
 					className: 'btn btn-sm btn-success',
@@ -469,6 +481,7 @@ if(!isset($location_error)) {
 						$('#addModal').modal('toggle');
 					}
 				}
+                <?php endif; ?>
 			],	
 			columns: [
 				{ data:"id", visible: false},
@@ -498,6 +511,7 @@ if(!isset($location_error)) {
                         return new Date(data.endsWith('Z') ? data : data + 'Z').toLocaleString();
 					}
 				},
+                <?php if($isUser): ?>
 				{ 
 					data: null,
 					defaultContent: '',
@@ -509,9 +523,11 @@ if(!isset($location_error)) {
 						return type === 'display' ? buttons : '';
 					}
 				},
+                <?php endif; ?>
 			]
 		});
 
+        <?php if($isUser): ?>
 		$('#deleteModal #submit').on('click', function(e){
 			var screen =$("#deleteModal").find("input[name='screen-id']").val();
 			$.ajax({
@@ -596,6 +612,7 @@ if(!isset($location_error)) {
 			modal.find('#code').val('');
 			modal.find('#screen-name').val('');
 		});
+        <?php endif; ?>
 
 		var socket = io("<?php echo WS_URL ?>/users", {
 			withCredentials: true,
