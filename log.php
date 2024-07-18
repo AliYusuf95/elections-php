@@ -131,7 +131,7 @@ $logged_user = $_SESSION['username'];
 						</thead>
 						<tbody>
 							<?php
-							$select_log = mysqli_query($con, "SELECT id, title, username, DATE_FORMAT(CONVERT_TZ(createdAt, 'GMT', '+03:00'), '%Y-%m-%d %r') AS created_at FROM system_log");
+							$select_log = mysqli_query($con, "SELECT id, title, username, DATE_FORMAT(CONVERT_TZ(createdAt, '+00:00', '+03:00'), '%Y-%m-%d %r') AS created_at FROM system_log");
 							while($fetch_log = mysqli_fetch_assoc($select_log)){
 
 							echo '<tr>
