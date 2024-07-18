@@ -257,20 +257,18 @@ $current_time = date("h:i:s A");
 	<div class="main-content container">
 		<h1><?=$location_name?></h1>
 		</br>
-		<div class="row small-spacing">
-				<div class="col-lg-12 col-md-6 col-xs-12">
-					<div class="box-content bg-info text-white">
-						<div class="statistics-box with-icon">
-							<i class="ico small fa fa-users"></i>
-							<p class="text text-white" style="font-weight:bold;">إجمالي الناخبين</p>
-							<h2 class="counter"><?php echo $total_voters ?: 0; ?></h2>
-						</div>
-					</div>
-					<!-- /.box-content -->
-				</div>
-		</div>
 
 		<div class="row small-spacing">
+            <div class="col-lg-12 col-md-12 col-xs-12">
+                <div class="box-content bg-info text-white">
+                    <div class="statistics-box with-icon">
+                        <i class="ico small fa fa-users"></i>
+                        <p class="text text-white" style="font-weight:bold;">إجمالي الناخبين</p>
+                        <h2 class="counter"><?php echo $total_voters ?: 0; ?></h2>
+                    </div>
+                </div>
+                <!-- /.box-content -->
+            </div>
 				<!-- /.col-md-6 col-xs-12 -->
 				<div class="col-md-6 col-xs-12">
 					<div class="box-content bg-danger text-white" style="background-color: #333333!important;">
@@ -409,6 +407,9 @@ $current_time = date("h:i:s A");
 					data:"updatedAt", 
 					title: "آخر تحديث",
 					render: function ( data, type, row, meta ) {
+                        if (data === '0000-00-00 00:00:00') {
+                            return '-';
+                        }
 						return new Date(data).toISOString().replace('T', ' ').substring(0, 16);
 					}
 				},

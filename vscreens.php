@@ -188,6 +188,9 @@ if(!isset($location_error)) {
                             <li>
                                 <a href="vcandidates"><i class="ico mdi mdi-account-multiple"></i><span style="font-weight: bold;">المرشحون</span></a>
                             </li>
+                            <li>
+                                <a href="voters?l=all"><i class="ico mdi mdi mdi-account-card-details"></i><span style="font-weight: bold;">الناخبين</span></a>
+                            </li>
 							<li>
 								<a href="statistics"><i class="ico mdi mdi-chart-bar"></i><span style="font-weight: bold;">الإحصائيات</span></a>
 							</li>
