@@ -18,10 +18,12 @@ if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && isset($_SES
     $select_user_Location = mysqli_query($con, "SELECT locationId FROM $users_table WHERE id = " . $_SESSION["id"]);
     $location_id = mysqli_fetch_row($select_user_Location)[0];
     $isUser = true;
+    $logged_user = $_SESSION['username'];
 } else if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && isset($_SESSION["admin"]) && $_SESSION["admin"] === true && isset($_GET["l"])) {
     $isAdmin = true;
     $location_id = $_GET["l"];
     $isUser = true;
+    $logged_user = $_SESSION['username'];
 } else {
     $location_id = $_GET["l"];
 }
@@ -56,8 +58,6 @@ function getLocationInfo() {
 
 getLocationInfo();
 
-
-$logged_user = $_SESSION['username'];
 $current_time = date("h:i:s A");
 
 if(!isset($location_error)) {
