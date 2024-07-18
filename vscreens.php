@@ -495,7 +495,7 @@ if(!isset($location_error)) {
 					data:"updatedAt", 
 					title: "آخر تحديث",
 					render: function ( data, type, row, meta ) {
-						return new Date(data.endsWith('Z') ? date : data + 'Z').toISOString().replace('T', ' ').substring(0, 16);
+                        return new Date(data.endsWith('Z') ? data : data + 'Z').toISOString().replace('T', ' ').substring(0, 16);
 					}
 				},
 				{ 
