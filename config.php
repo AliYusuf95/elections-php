@@ -36,7 +36,7 @@ if (!$con) {
 mysqli_options($con, MYSQLI_OPT_CONNECT_TIMEOUT, 10);
 mysqli_real_connect($con, DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 mysqli_set_charset($con, "utf8");
-date_default_timezone_set("Asia/Bahrain");
+//date_default_timezone_set("Asia/Bahrain");
 
 // Check connection
 if (mysqli_connect_errno()) {
