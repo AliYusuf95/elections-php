@@ -236,7 +236,7 @@ if(!isset($location_error)) {
 	?>
 	<div class="main-content container">
 		<h1><?=$location_name?></h1>
-		</br>
+		<br/>
 		<div class="row small-spacing">
 			<div class="col-lg-3 col-md-6 col-xs-12">
 				<div class="box-content bg-primary text-white">
@@ -310,23 +310,27 @@ if(!isset($location_error)) {
 						</thead>
 						<tbody>
 							<?php
-
-							while($fetch_screens = mysqli_fetch_assoc($select_screens)){
-
-							echo '
-							<tr id="row-'.$fetch_screens['id'].'">
-									<td>'.$fetch_screens['id'].'</td>
-									<td>'.$fetch_screens['name'].'</td>
-									<td>'.$fetch_screens['connected'].'</td>
-									<td>'.$fetch_screens['available'].'</td>
-									<td>'.$fetch_screens['updatedAt'].'</td>
-							';
-							echo '
-									<td>
-                  <div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light" style="width: 100px;" data-toggle="modal" data-target="#deleteModal" data-name="'.$fetch_screens['name'].'" data-id="'.$fetch_screens['id'].'"><i class="ico fa fa-times"></i>حذف</button></div>
-				  <div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-warning btn-xs waves-effect waves-light" style="width: 144px;" data-toggle="modal" data-target="#submitScreenModal" data-name="'.$fetch_screens['name'].'" data-id="'.$fetch_screens['id'].'"><i class="ico fa fa-paper-plane"></i>تسليم الإستمارة</button></div>
-				  ';
-							}
+                            while($fetch_screens = mysqli_fetch_assoc($select_screens)):
+                            ?>
+                            <tr id="row-<?php echo $fetch_screens['id']; ?>">
+                                <td><?php echo $fetch_screens['id']; ?></td>
+                                <td><?php echo $fetch_screens['name']; ?></td>
+                                <td><?php echo $fetch_screens['connected']; ?></td>
+                                <td><?php echo $fetch_screens['available']; ?></td>
+                                <td><?php echo $fetch_screens['updatedAt']; ?></td>
+                                <td>
+                                    <div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light" style="width: 100px;" data-toggle="modal" data-target="#deleteModal" data-name="<?php echo $fetch_screens['name']; ?>" data-id="<?php echo $fetch_screens['id']; ?>"><i class="ico fa fa-times"></i>حذف</button></div>
+                                    <?php
+                                    if ($isAdmin):
+                                    ?>
+                                    <div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-warning btn-xs waves-effect waves-light" style="width: 144px;" data-toggle="modal" data-target="#submitScreenModal" data-name="<?php echo $fetch_screens['name']; ?>" data-id="<?php echo $fetch_screens['id']; ?>"><i class="ico fa fa-paper-plane"></i>تسليم الإستمارة</button></div>
+                                    <?php
+                                    endif;
+                                    ?>
+                                </td>
+                            </tr>
+                            <?php
+                            endwhile;
 							?>
 						</tbody>
 					</table>
@@ -377,13 +381,13 @@ if(!isset($location_error)) {
 						<input type="text" class="form-control" id="screen-name" placeholder="إسم الشاشة">
 					</div>
 				</div>
-				<div class="modal-footer" class="add-form">
+				<div class="modal-footer add-form">
 					<button id="submit" data-dismiss="modal" class="btn btn-icon btn-icon-left btn-info btn-xs waves-effect waves-light"><i class="ico fa fa-plus"></i>إضافة</button>
 				</div>
-				</div>
-			</div>
-		</div>
-	</div>
+            </div>
+        </div>
+    </div>
+    <?php if($isAdmin): ?>
 	<div class="modal fade" id="submitScreenModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
@@ -395,14 +399,16 @@ if(!isset($location_error)) {
 					<h3>هل أنت متأكد من تسليم صفحة الإقتراع</h3>
 					<h1 class="screen_name"></h1>
 				</div>
-				<div class="modal-footer" class="add-form">
+				<div class="modal-footer add-form">
 					<input type="hidden" name="screen-id" class="screen_id" value="">
-					<button id="submit" data-dismiss="modal" class="btn btn-icon btn-icon-left btn-warning btn-xs waves-effect waves-light"><i class="ico fa fa-paper-plane"></i>تسليم</button>
+					<button id="submit" data-dismiss="modal" class="btn btn-icon btn-icon-left btn-warning btn-xs waves-effect waves-light">
+                        <i class="ico fa fa-paper-plane"></i>تسليم
+                    </button>
 				</div>
-				</div>
-			</div>
-		</div>
-	</div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
 	<!--[if lt IE 9]>
 		<script src="assets/script/html5shiv.min.js"></script>
@@ -494,8 +500,9 @@ if(!isset($location_error)) {
 					defaultContent: '',
 					title: "الأوامر",
 					render: function ( data, type, row, meta ) {
-						var buttons = '<div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light" style="width: 100px;" data-toggle="modal" data-target="#deleteModal" data-id="'+row.id+'" data-name="'+row.name+'"><i class="ico fa fa-times"></i>حذف</button></div>' +
-						'<div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-warning btn-xs waves-effect waves-light" style="width: 144px;" data-toggle="modal" data-target="#submitScreenModal" data-id="'+row.id+'" data-name="'+row.name+'"><i class="ico fa fa-paper-plane"></i>تسليم الإستمارة</button></div>';
+						var deleteButton = '<div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-danger btn-xs waves-effect waves-light" style="width: 100px;" data-toggle="modal" data-target="#deleteModal" data-id="'+row.id+'" data-name="'+row.name+'"><i class="ico fa fa-times"></i>حذف</button></div>';
+                        var submitButton = '<div class="col-12"><button type="button" class="btn btn-icon btn-icon-left btn-warning btn-xs waves-effect waves-light" style="width: 144px;" data-toggle="modal" data-target="#submitScreenModal" data-id="'+row.id+'" data-name="'+row.name+'"><i class="ico fa fa-paper-plane"></i>تسليم الإستمارة</button></div>';
+                        var buttons = deleteButton <?php if($isAdmin): ?> + submitButton <?php endif; ?>;
 						return type === 'display' ? buttons : '';
 					}
 				},
@@ -521,6 +528,7 @@ if(!isset($location_error)) {
 			});
     	});
 
+        <?php if($isAdmin): ?>
 		$('#submitScreenModal #submit').on('click', function(e){
 			var screen =$("#submitScreenModal").find("input[name='screen-id']").val();
 			$.ajax({
@@ -539,6 +547,7 @@ if(!isset($location_error)) {
 
 			});
     	});
+        <?php endif; ?>
 
 		$('#addModal #submit').on('click', function(e){
 			var code = $("#addModal #code").val();

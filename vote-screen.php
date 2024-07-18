@@ -9,6 +9,7 @@ $csrf = new CSRF('vote-screen', 'key-awesome', 0);
 
 $show_success = false;
 $show_error = false;
+$error_message = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if(isset($_POST['action']) && $_POST['action'] === 'get-csrf-token') {
@@ -18,51 +19,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     if(!isset($_POST['is_submited']) || !isset($_POST['sessionId']) || !$csrf->validate('vote-form')) {
-        $show_error = 1;
+        $show_error = true;
+        $error_message = "حدث خطأ في حفظ البيانات، يرجى إعادة تحميل الصفحة";
     } else {
         $candidates = isset($_POST['selected_candidates']) ? $_POST['selected_candidates'] : [];
         $sessionId = $_POST['sessionId'];
         $con->begin_transaction();
         try {
-            // select candidates positions, then check if number of candidates selected is less than position max votes
-            $clause = implode(',', array_fill(0, count($candidates), '?'));
-            $bindString = str_repeat('s', count($candidates));
-            $stmt = $con->prepare("SELECT c.id, p.id, p.maxVotes FROM positions p JOIN candidates c ON p.id = c.positionId WHERE c.id IN ($clause)");
-            $stmt->bind_param($bindString, ...$candidates);
-            $stmt->execute();
-            $stmt->bind_result($candidate, $position, $maxVotes);
-            $candidates_by_position = [];
-            while ($stmt->fetch()) {
-                if ($candidates_by_position[$position] === null) {
-                    $candidates_by_position[$position] = array(
-                        'candidates' => array(),
-                        'maxVotes' => $maxVotes
-                    );
+            if (count($candidates) > 0) {
+                // select candidates positions, then check if number of candidates selected is less than position max votes
+                $clause = implode(',', array_fill(0, count($candidates), '?'));
+                $bindString = str_repeat('s', count($candidates));
+                $stmt = $con->prepare("SELECT c.id, p.id, p.maxVotes FROM positions p JOIN candidates c ON p.id = c.positionId WHERE c.id IN ($clause)");
+                $stmt->bind_param($bindString, ...$candidates);
+                $stmt->execute();
+                $stmt->bind_result($candidate, $position, $maxVotes);
+                $candidates_by_position = [];
+                while ($stmt->fetch()) {
+                    if ($candidates_by_position[$position] === null) {
+                        $candidates_by_position[$position] = array(
+                            'candidates' => array(),
+                            'maxVotes' => $maxVotes
+                        );
+                    }
+                    if (!in_array($candidate, $candidates_by_position[$position]['candidates'])) {
+                        $candidates_by_position[$position]['candidates'][] = $candidate;
+                    }
                 }
-                if (!in_array($candidate, $candidates_by_position[$position]['candidates'])) {
-                    $candidates_by_position[$position]['candidates'][] = $candidate;
+                $stmt->close();
+
+                foreach ($candidates_by_position as $position => $item) {
+                    if (count($item['candidates']) > $item['maxVotes']) {
+                        $error_message = 'يمكن التصويت إلى ' . $item['maxVotes'] . ' مرشحين كحد أقصى، يرجى المحاولة مجدداً';
+                        throw new Exception($error_message);
+                    }
                 }
             }
-            $stmt->close();
 
-            foreach ($candidates_by_position as $position => $item) {
-                if (count($item['candidates']) > $item['maxVotes']) {
-                    throw new Exception('يمكن التصويت إلى ' . $item['maxVotes'] . ' مرشحين كحد أقصى، يرجى المحاولة مجدداً');
-                }
-            }
-
-            $stmt = $con->prepare("UPDATE voters_data v JOIN screens s ON s.voterId = v.voterId SET v.status = 3, v.updatedAt = CURRENT_TIMESTAMP(), s.voterId = null WHERE v.status = 2 AND s.sessionId = ?");
+            $stmt = $con->prepare("UPDATE voters_data v JOIN screens s ON s.voterId = v.voterId SET v.status = 3, s.voterId = null WHERE v.status = 2 AND s.sessionId = ?");
             $stmt->bind_param('s', $sessionId);
             $stmt->execute();
 
             if ($con->affected_rows < 1) {
-                throw new Exception('حدث خطأ في حفظ البيانات، يرجى المحاولة مجدداً');
+                $error_message = 'حدث خطأ في حفظ البيانات، الناخب صوت مسبقًا';
+                throw new Exception($error_message);
             }
             
             $stmt->close();
 
             // use inter and update on duplicate
-            $stmt = $con->prepare("INSERT INTO voting_results (candidateId, votes, createdAt, updatedAt) VALUES (?, 1, NOW(), NOW()) ON DUPLICATE KEY UPDATE votes = votes + 1");
+            $stmt = $con->prepare("INSERT INTO voting_results (candidateId, votes, createdAt, updatedAt) VALUES (?, 1, '0000-00-00 00:00:00', '0000-00-00 00:00:00') ON DUPLICATE KEY UPDATE votes = votes + 1");
             $stmt->bind_param('s', $candidate);
             foreach ($candidates as $index => $value) {
                 $candidate = $value;
@@ -71,15 +77,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
 
             // insert voting submission JSON record [{positionId: 1, positionName: '...', candidates: [{id: 1, name: '...'}, ...]}, ...]
-            $stmt = $con->prepare("INSERT INTO voting_submissions (id, submission) 
-            SELECT uuid() id, JSON_ARRAYAGG(item) submissions
-            FROM (
-                SELECT JSON_OBJECT('positionId', p.id, 'positionName', p.name, 'candidates', JSON_ARRAYAGG(JSON_OBJECT('id', c.id, 'name', c.name))) item 
-                FROM positions p JOIN candidates c ON c.positionId = p.id 
-                WHERE c.id IN (" . implode(',', array_fill(0, count($candidates), '?')) . ") 
-                GROUP BY p.id
-            ) items");
-            $stmt->bind_param(str_repeat('s', count($candidates)), ...$candidates);
+            if (count($candidates) < 1) {
+                $stmt = $con->prepare("INSERT INTO voting_submissions (id, submission) VALUES (uuid(), JSON_ARRAY())");
+            } else {
+                $stmt = $con->prepare("INSERT INTO voting_submissions (id, submission) 
+                SELECT uuid() id, JSON_ARRAYAGG(item) submission
+                FROM (
+                    SELECT JSON_OBJECT('positionId', p.id, 'positionName', p.name, 'candidates', JSON_ARRAYAGG(JSON_OBJECT('id', c.id, 'name', c.name))) item 
+                    FROM positions p JOIN candidates c ON c.positionId = p.id 
+                    WHERE c.id IN ($clause) 
+                    GROUP BY p.id
+                ) items");
+                $stmt->bind_param(str_repeat('s', count($candidates)), ...$candidates);
+            }
             $stmt->execute();
             $stmt->close();
 
@@ -89,7 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("refresh:5; url=vote-screen");
         } catch (Exception $e) {
             $con->rollback();
-            $show_error = 2;
+            if (empty($error_message)) {
+                $error_message = 'حدث خطأ في حفظ البيانات، يرجى التواصل مع أعضاء التسجيل';
+            }
+            $show_error = true;
         }
     }
 }
@@ -146,6 +159,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cursor: pointer;
             margin-top: 100px;
         }
+        .candidate .badge.select-count {
+            top: 10px;
+            left: 13px;
+            position: absolute;
+            padding-top: 8px;
+            font-size: 18px;
+        }
         .box-contact .avatar {
             top: -94px;
             width: 150px;
@@ -193,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <?php
-    elseif($show_error != false):
+    elseif($show_error):
     ?>
 
     <div id="connect-wrapper" style="top: 150px;position: relative;">
@@ -204,18 +224,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div>
                 <h1 class="text-orange">
-                    <?php if($show_error == 1): ?>
-                    حدث خطأ في حفظ البيانات، يرجى إعادة تحميل الصفحة
+                    <?php echo $error_message; ?>
+                    <h1 class="text-orange" style="font-size: 10em;"><i class="ico fa fa-times"></i></h1>
                     <br />
                     <br />
                     <button type="button" class="btn btn-lg btn-icon btn-icon-left btn-primary waves-effect waves-light" onclick="location.reload();">
                         <i class="ico fa fa-refresh"></i>إعادة تحميل
                     </button>
-                    <?php elseif($show_error == 2): ?>
-                    حدث خطأ في حفظ البيانات، يرجى التواصل مع أعضاء التسجيل
-                    <?php endif; ?>
+                    <a href="vote-screen" type="button" class="btn btn-lg btn-icon btn-icon-right btn-primary waves-effect waves-light">
+                        <i class="ico fa fa-arrow-left"></i>رجوع
+                    </a>
                 </h1>
-                <h1 class="text-orange" style="font-size: 10em;"><i class="ico fa fa-times"></i></h1>
             </div>
         </center>
     </div>
@@ -341,6 +360,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php
             endif;
             ?>
+            const reloadAlert = function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ',
+                    text: 'حدث خطأ أثناء تحميل الصفحة، يرجى المحاولة مجدداً',
+                    confirmButtonText: 'إعادة تحميل',
+                    confirmButtonColor: '#f57c00',
+                    showCancelButton: false,
+                    allowEscapeKey: false,
+                    allowOutsideClick: false,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload();
+                    }
+                });
+            }
             socket.on("new-session", function(data) {
                 // attach the session ID to the next reconnection attempts
                 socket.auth = {
@@ -363,24 +398,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $('#connect-screen').hide();
             });
             socket.on("show-vote", function(data) {
-
-                const reloadAlert = function () {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'خطأ',
-                        text: 'حدث خطأ أثناء تحميل الصفحة، يرجى المحاولة مجدداً',
-                        confirmButtonText: 'إعادة تحميل',
-                        confirmButtonColor: '#f57c00',
-                        showCancelButton: false,
-                        allowEscapeKey: false,
-                        allowOutsideClick: false,
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            location.reload();
-                        }
-                    });
-                }
-
                 $.ajax({
                     url: 'vote-screen.php',
                     type: 'POST',
@@ -419,6 +436,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         return title + candidates.map(function (c) {
                             return `<div class="col-lg-4 col-md-6">
                                 <div class="candidate box-contact">
+                                    <spin class="badge bg-danger select-count"></spin>
                                     <img src="${c.img}" alt="" class="avatar">
                                     <h3 class="name margin-top-10">${c.name}</h3>
                                     <div class="text-muted">
@@ -555,6 +573,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         const checked = $positionCheckboxes.filter(':checked').length;
                         $positionCheckboxes.filter(':not(:checked)').prop('disabled', checked >= position.maxVotes);
                         $('#count-checked-checkboxes-' + position.id).text(checked);
+                        if (!this.checked) {
+                            $(this).closest('.select-count').text('');
+                        }
+                        $positionCheckboxes.closest('.candidate').find('.select-count').text('');
+                        $positionCheckboxes.filter(':checked').closest('.candidate').find('.select-count').text(checked);
                     });
                     $('.candidate.box-contact').on('click', function(e) {
                         if (!$(e.target).is(':checkbox')) {
@@ -575,7 +598,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
             socket.on("submit-vote", function(data) {
                 if (isVoting) {
-                    $('#voting-form').submit();
+                    $.ajax({
+                        url: 'vote-screen.php',
+                        type: 'POST',
+                        data: {
+                            action: 'get-csrf-token'
+                        },
+                        success: function(data) {
+                            if (data && data.token) {
+                                $('input[name="key-awesome"]').val(data.token);
+                                $('#voting-form').submit();
+                                return;
+                            }
+                            reloadAlert();
+                        },
+                        error: function() {
+                            reloadAlert();
+                        }
+                    });
                 }
             });
         });

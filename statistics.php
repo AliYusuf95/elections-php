@@ -56,7 +56,232 @@ if ($isAllLocationsClosed) {
     $stmt->close();
 
 }
+if ($isAllLocationsClosed && isset($_POST['export-csv'])) {
+    // get all positions and candidates
+    $positions = [];
+    $stmt = $con->prepare("SELECT p.id as positionId, p.name as positionName, c.id as candidateId, c.name as candidateName FROM positions p LEFT JOIN candidates c ON p.id = c.positionId");
+    $stmt->execute();
+    $stmt->bind_result($positionId, $positionName, $candidateId, $candidateName);
+    while ($stmt->fetch()) {
+        if (empty($positions[$positionId])) {
+            $positions[$positionId] = [
+                'positionId' => $positionId,
+                'positionName' => $positionName,
+                'candidatesIds' => [],
+                'candidates' => []
+            ];
+        }
+        $positions[$positionId]['candidatesIds'][] = $candidateId;
+        $positions[$positionId]['candidates'][$candidateId] = [
+            'candidateId' => $candidateId,
+            'candidateName' => $candidateName
+        ];
+        $positions[$positionId]['submissions'][$candidateId] = [];
+    }
+    $stmt->close();
+    $positionIds = array_keys($positions);
 
+    // get all submissions
+    $stmt = $con->prepare("SELECT id, submission from voting_submissions");
+    $stmt->execute();
+    $submissionCount = 0;
+    $stmt->bind_result($submissionId, $submission);
+    while ($stmt->fetch()) {
+        $submission = json_decode($submission, true);
+        $submissionPositions = [];
+        $submissionCount++;
+        foreach ($submission as $submissionPosition) {
+            $submissionPositions[] = $submissionPosition['positionId'];
+            foreach ($submissionPosition['candidates'] as $candidate) {
+                $positions[$submissionPosition['positionId']]['submissions'][$candidate['id']][] = 1;
+            }
+            $positionCandidates = $positions[$submissionPosition['positionId']]['candidatesIds'];
+            $submissionCandidates = array_map(function ($candidate) {return $candidate['id'];}, $submissionPosition['candidates']);
+            $emptyCandidates = array_diff($positionCandidates, $submissionCandidates);
+            foreach ($emptyCandidates as $emptyCandidate) {
+                $positions[$submissionPosition['positionId']]['submissions'][$emptyCandidate][] = 0;
+            }
+        }
+        $emptyPositions = array_diff($positionIds, $submissionPositions);
+        foreach ($emptyPositions as $emptyPosition) {
+            foreach ($positions[$emptyPosition]['candidatesIds'] as $candidateId) {
+                $positions[$emptyPosition]['submissions'][$candidateId][] = 0;
+            }
+        }
+    }
+    $stmt->close();
+
+    // create zip file that contains csv for each position with data from submissions
+    $options = new ZipStream\Option\Archive();
+    $options->setSendHttpHeaders(true);
+    $zip = new ZipStream\ZipStream('results.zip', $options);
+
+    $fiveMBs = 5 * 1024 * 1024;
+    foreach ($positions as $position) {
+        $csv = fopen("php://temp/maxmemory:$fiveMBs", 'w+');
+        $candidateNames = array_map(function ($candidate) {return $candidate['candidateName'];}, $position['candidates']);
+        fputcsv($csv, $candidateNames);
+        for ($i = 0; $i < $submissionCount; $i++) {
+            $row = [];
+            foreach ($position['submissions'] as $candidateId => $submissions) {
+                $row[] = $submissions[$i];
+            }
+            fputcsv($csv, $row);
+        }
+        rewind($csv);
+        $zip->addFileFromStream($position['positionName'].'.csv', $csv);
+        fclose($csv);
+    }
+
+    // send zip file
+    try {
+        $zip->finish();
+    } catch (Exception $e) {
+        echo $e->getMessage();
+    }
+    exit;
+}
+
+if ($isAllLocationsClosed && isset($_POST['export-doc'])) {
+    require_once 'ExportToWord.inc.php';
+
+    $stmt = $con->prepare("SELECT COUNT(id) as total_voters FROM voters");
+    $stmt->execute();
+    $stmt->bind_result($total_voters);
+    $stmt->fetch();
+    $stmt->close();
+
+    $stmt = $con->prepare("SELECT COUNT(id) as total_voters_registered FROM voters_data");
+    $stmt->execute();
+    $stmt->bind_result($total_voters_registered);
+    $stmt->fetch();
+    $stmt->close();
+
+    $stmt = $con->prepare("SELECT COUNT(id) as total_submissions FROM voting_submissions");
+    $stmt->execute();
+    $stmt->bind_result($total_submissions);
+    $stmt->fetch();
+    $stmt->close();
+
+    $stmt = $con->query("SELECT id, name, maxVotes FROM positions ORDER BY `order`");
+    $positions = $stmt->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $stmt = $con->query("SELECT p.id as positionId, p.name as positionName, c.name as candidateName, COALESCE(r.votes, 0) as votes FROM `positions` p
+                                LEFT JOIN `candidates` c ON p.id = c.positionId 
+                                LEFT JOIN `voting_results` r ON c.id = r.candidateId
+    ORDER BY p.order, r.votes DESC, c.id");
+    $results = array_reduce($stmt->fetch_all(MYSQLI_ASSOC), function (array $accumulator, array $element) {
+        $accumulator[$element['positionId']][] = $element;
+        return $accumulator;
+    }, []);
+    $stmt->close();
+
+    $html = "
+    <html>
+    <body dir='rtl'>
+        <h3>النتائج العامة:</h3>
+        <ol>
+            <li>عدد الناخبين الذين يحق لهم التصويت $total_voters ناخب</li>
+            <li>عدد الناخبين الذين شاركوا في الانتخابات $total_voters_registered ناخب</li>".
+            implode(array_map(function ($position) use ($total_submissions) {
+                return "<li>عدد البطائق الصحيحة ل{$position['name']} $total_submissions بطاقة</li>".
+                    "<li>عدد البطائق الملغية ل{$position['name']} 0 بطاقة</li>";
+            }, $positions))
+        . "
+        </ol>
+        <br/>
+        ".
+        implode(array_map(function ($position) use ($results) {
+            return "<br/><h4 class='underline'> نتائج منصب {$position['name']}</h4>
+                    وقد ترشح للمنصب:
+                    <ol>"
+                    .implode(array_map(function ($candidate) use ($position) {
+                        return "<li>{$candidate['candidateName']}، وحصل على {$candidate['votes']} صوتًا</li>";
+                    }, $results[$position['id']]))
+                    ."</ol>
+                    ";
+        }, $positions))
+        ."
+        <br/>
+        <h3>وعليه وفقاً للنظام الانتخابي للمأتم:</h3>
+        <ol>
+            <li>يشغل منصب رئيس المأتم و رئيس مجلس الإدارة المرشح الحائز على الغالبية المطلقة (50%+1) من الأصوات الصحيحة للمقترعين.</li>
+            <li>يشغل مراكز عضوية مجلس الإدارة الثمانية المرشحون الحاصلون على أعلى عدد من الأصوات الصحيحة للمقترعين.</li>
+        </ol>
+        <br/>
+        <h3>تكون النتائج الأولية لانتخابات الدورة الحادية عشر على النحو التالي:</h3>".
+        implode(array_map(function ($position) use ($results) {
+            $result = $position['maxVotes'] == 1 ? "<li>{$results[$position['id']][0]['candidateName']}</li>" : implode(array_map(function ($candidate) use ($position) {
+                return "<li>{$candidate['candidateName']}</li>";
+            }, array_slice($results[$position['id']], 0, $position['maxVotes'])));
+            return "<br/>
+                    <h3 class='underline'>{$position['name']}</h3>
+                    <ol>$result</ol>
+                    ";
+        }, $positions))
+        ."
+    </body>
+    </html>
+    ";
+    $css = '<style type = "text/css">html body * {direction: rtl;} .underline{ text-decoration: underline; }</style>';
+    $fileName = 'php://output';
+    header("Content-Type: application/vnd.ms-word");
+    header("Expires: 0");
+    header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+    header("content-disposition: attachment;filename=Report.doc");
+    ExportToWord::htmlToDoc($html, $css, $fileName);
+    exit();
+}
+
+
+// result by submissions
+//"
+//SELECT id, positionId, positionName, candidateId, candidateName from voting_submissions
+//CROSS JOIN JSON_TABLE(
+//    submission,
+//    '$[*]' COLUMNS(
+//        positionId INT PATH '$.positionId',
+//        positionName VARCHAR(255) PATH '$.positionName',
+//        candidates JSON PATH '$.candidates'
+//    )
+//) AS positions
+//CROSS JOIN JSON_TABLE(
+//    positions.candidates,
+//    '$[*]' COLUMNS(
+//        candidateId INT PATH '$.id',
+//        candidateName VARCHAR(255) PATH '$.name'
+//    )
+//) AS candidates
+//GROUP BY id, positionId, positionName, candidateId, candidateName;
+//"
+
+// results from submissions
+//"
+//(SELECT CONVERT(positions.positionId USING utf8) as positionId, CONVERT(positions.positionName USING utf8) as positionName, CONVERT(candidates.candidateId USING utf8) as candidateId, CONVERT(candidates.candidateName USING utf8) as candidateName, count(*) as count from voting_submissions
+//CROSS JOIN JSON_TABLE(
+//              submission,
+//              '$[*]' COLUMNS(
+//                positionId INT PATH '$.positionId',
+//                positionName VARCHAR(255) PATH '$.positionName',
+//                candidates JSON PATH '$.candidates'
+//              )
+//           ) AS positions
+//CROSS JOIN JSON_TABLE(
+//    positions.candidates,
+//              '$[*]' COLUMNS(
+//                candidateId INT PATH '$.id',
+//                candidateName VARCHAR(255) PATH '$.name'
+//              )
+//           ) AS candidates
+//group BY positions.positionId, positions.positionName, candidates.candidateId, candidates.candidateName
+//UNION
+//SELECT p.id as positionId, p.name as positionName, c.id as candidateId, c.name as candidateName, 0 as count
+//FROM candidates c
+//JOIN positions p ON p.id = c.positionId
+//group BY p.id, c.id)
+//ORDER BY `positionId` + 0, `candidateId`+ 0 ASC
+//";
 
 ?>
 <!DOCTYPE html>
@@ -145,6 +370,9 @@ if ($isAllLocationsClosed) {
                     <li>
                         <a href="vcandidates"><i class="ico mdi mdi-account-multiple"></i><span style="font-weight: bold;">المرشحون</span></a>
                     </li>
+                    <li>
+                        <a href="voters?l=all"><i class="ico mdi mdi mdi-account-card-details"></i><span style="font-weight: bold;">الناخبين</span></a>
+                    </li>
                     <li class="current">
                         <a class="text-primary" href="statistics"><i class="ico mdi mdi-chart-bar"></i><span style="font-weight: bold;">الإحصائيات</span></a>
                     </li>
@@ -229,6 +457,21 @@ if ($isAllLocationsClosed) {
 		</div>
 		<!-- .row -->
 
+        <div class="row small-spacing">
+            <div class="col-xs-12">
+                <div class="box-content">
+                    <h4 class="box-title">استخراج البيانات</h4>
+                    <div class="box-body">
+                        <form action="statistics.php" method="post">
+                            <div class="form-group">
+                                <button type="submit" name="export-csv" class="btn btn-primary">بطاقات الإقتراع</button>
+                                <button type="submit" name="export-doc" class="btn btn-primary btn-bordered">نتائج التصويت</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     <!-- voters volume chart        -->
         <div class="row small-spacing">
             <div class="col-xs-12">
