@@ -410,7 +410,7 @@ $current_time = date("h:i:s A");
                         if (data === '0000-00-00 00:00:00') {
                             return '-';
                         }
-						return new Date(data + 'Z').toISOString().replace('T', ' ').substring(0, 16);
+						return new Date(data.endsWith('Z') ? date : data + 'Z').toISOString().replace('T', ' ').substring(0, 16);
 					}
 				},
 			]
