@@ -798,6 +798,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAllLocationsClosed) {
             const isReorder = $this.hasClass('table-reorder');
             const canReorder = <?php echo $isAllLocationsClosed ? 'true' : 'false'; ?>;
             const table = $this.DataTable({
+                ordering: $this.hasClass('table-reorder'),
                 rowReorder: isReorder && canReorder,
                 language: tableLang,
                 columnDefs: isReorder ? [

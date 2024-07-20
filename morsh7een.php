@@ -72,7 +72,7 @@ include 'config.php';
         <?php
 
         // build candidates avatars with names grouped by their position
-        $select_positions = mysqli_query($con, "SELECT p.name positionName , c.name name, c.img img FROM positions p JOIN candidates c ON p.id = c.positionId ORDER BY p.order, c.name");
+        $select_positions = mysqli_query($con, "SELECT p.name positionName , c.name name, c.img img FROM positions p JOIN candidates c ON p.id = c.positionId ORDER BY p.order, c.id");
         $positions = [];
         while ($fetch_positions = mysqli_fetch_assoc($select_positions)) {
             $positions[$fetch_positions['positionName']][] = ['name' => $fetch_positions['name'], 'img' => $fetch_positions['img']];
