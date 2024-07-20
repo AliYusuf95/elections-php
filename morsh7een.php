@@ -83,34 +83,30 @@ include 'config.php';
                 <div class="col-xs-12">
                     <div class="box-content" style="background: initial; border: initial; -webkit-box-shadow: none; box-shadow: none;">
                         <h2 class="box-title" style="font-size: 30px;"><?php echo array_keys($positions)[$i]; ?></h2>
-                    <?php
-                    $colSize = count($positions[array_keys($positions)[$i]]) % 4 === 0 ? 3 : 4;
-                    for ($j = 0; $j < count($positions[array_keys($positions)[$i]]); $j++):
-                        if ($j % $colSize === 0):
-                        ?>
-                        <div class="row">
-                        <?php
-                        endif;
-                        ?>
-                            <div class="col-lg-<?php echo $colSize; ?> col-md-6">
-                                <div class="box-contact">
-                                    <img src="<?php echo $positions[array_keys($positions)[$i]][$j]['img']; ?>"
-                                         alt="" class="avatar">
-                                    <h3 class="name margin-top-10">
-                                        <?php echo $positions[array_keys($positions)[$i]][$j]['name']; ?>
-                                    </h3>
+                            <?php
+                            $colSize = count($positions[array_keys($positions)[$i]]) % 4 === 0 ? 3 : 4;
+                            $rowSize = $colSize === 3 ? 4 : 3;
+                            for ($j = 0; $j < count($positions[array_keys($positions)[$i]]); $j++):
+                                if ($j % $rowSize === 0) {
+                                    echo '<div class="row">';
+                                    $rowStart = $j;
+                                }
+                                ?>
+                                <div class="col-lg-<?php echo $colSize; ?> col-md-6">
+                                    <div class="box-contact">
+                                        <img src="<?php echo $positions[array_keys($positions)[$i]][$j]['img']; ?>"
+                                             alt="" class="avatar">
+                                        <h3 class="name margin-top-10">
+                                            <?php echo $positions[array_keys($positions)[$i]][$j]['name']; ?>
+                                        </h3>
+                                    </div>
                                 </div>
-                            </div>
-                        <?php
-                        if ($j % $colSize === 0):
-                        ?>
-                        </div>
-                        <?php
-                        endif;
-                        ?>
-                    <?php
-                    endfor;
-                    ?>
+                            <?php
+                            if ($j !== $rowStart && (($j+1) % $rowSize === 0)) {
+                                echo '</div>';
+                            }
+                            endfor;
+                            ?>
                     </div>
                 </div>
             </div>
