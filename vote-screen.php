@@ -433,8 +433,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         const pronounce = position.maxVotes > 1 ? `${position.maxVotes} أشخاص` : 'شخص';
                         const selectedCounter = `<h2 style="color: #af5656;">عدد اختياراتك الحالي:<span id="count-checked-checkboxes-${position.id}">0</span></h2>`;
                         const title = `<div class="row position" id="position-${position.id}" data-position-id="${position.id}"><div class="col-lg-12" style="margin-bottom: 40px;"><h1 style="font-weight: 700;">${position.name}</h1>${selectedCounter}<h4>يمكنك إختيار ${pronounce} او أقل</h4></div>`;
+                        let colSize = candidates.length % 4 === 0 ? 3 : 4;
                         return title + candidates.map(function (c) {
-                            return `<div class="col-lg-4 col-md-6">
+                            return `<div class="col-lg-${colSize} col-md-6">
                                 <div class="candidate box-contact">
                                     <spin class="badge bg-danger select-count"></spin>
                                     <img src="${c.img}" alt="" class="avatar">

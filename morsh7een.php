@@ -86,9 +86,10 @@ include 'config.php';
                         <h2 class="box-title" style="font-size: 30px;"><?php echo array_keys($positions)[$i]; ?></h2>
                         <div class="row">
                             <?php
+                            $colSize = count($positions[array_keys($positions)[$i]]) % 4 === 0 ? 3 : 4;
                             for ($j = 0; $j < count($positions[array_keys($positions)[$i]]); $j++):
                                 ?>
-                                <div class="col-lg-3 col-md-6">
+                                <div class="col-lg-<?php echo $colSize; ?> col-md-6">
                                     <div class="box-contact">
                                         <img src="<?php echo $positions[array_keys($positions)[$i]][$j]['img']; ?>"
                                              alt="" class="avatar">
