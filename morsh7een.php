@@ -84,15 +84,14 @@ include 'config.php';
                     <div class="box-content" style="background: initial; border: initial; -webkit-box-shadow: none; box-shadow: none;">
                         <h2 class="box-title" style="font-size: 30px;"><?php echo array_keys($positions)[$i]; ?></h2>
                             <?php
-                            $colSize = count($positions[array_keys($positions)[$i]]) % 4 === 0 ? 3 : 4;
-                            $rowSize = $colSize === 3 ? 4 : 3;
+                            $rowSize = 4;
                             for ($j = 0; $j < count($positions[array_keys($positions)[$i]]); $j++):
                                 if ($j % $rowSize === 0) {
                                     echo '<div class="row">';
                                     $rowStart = $j;
                                 }
                                 ?>
-                                <div class="col-lg-<?php echo $colSize; ?> col-md-6">
+                                <div class="col-lg-3 col-md-6">
                                     <div class="box-contact">
                                         <img src="<?php echo $positions[array_keys($positions)[$i]][$j]['img']; ?>"
                                              alt="" class="avatar">
