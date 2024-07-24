@@ -433,8 +433,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         const pronounce = position.maxVotes > 1 ? `${position.maxVotes} أشخاص` : 'شخص';
                         const selectedCounter = `<h2 style="color: #af5656;">عدد اختياراتك الحالي:<span id="count-checked-checkboxes-${position.id}">0</span></h2>`;
                         const title = `<div class="row position" id="position-${position.id}" data-position-id="${position.id}"><div class="col-lg-12" style="margin-bottom: 40px;"><h1 style="font-weight: 700;">${position.name}</h1>${selectedCounter}<h4>يمكنك إختيار ${pronounce} او أقل</h4></div>`;
-                        return title + candidates.map(function (c) {
-                            return `<div class="col-lg-3 col-md-6">
+                        const rowSize = 4;
+                        let rowStartPosition = 0;
+                        return title + candidates.map(function (c, i) {
+                            let rowStart = '';
+                            let rowEnd = '';
+                            if (i % rowSize === 0) {
+                                rowStart = '<div class="row">';
+                                rowStartPosition = i;
+                            }
+                            const item = `<div class="col-lg-3 col-md-6">
                                 <div class="candidate box-contact">
                                     <spin class="badge bg-danger select-count"></spin>
                                     <img src="${c.img}" alt="" class="avatar">
@@ -445,6 +453,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                 </div>
                             </div>`;
+                            if (i !== rowStartPosition && ((i+1) % rowSize === 0)) {
+                                rowEnd = '</div>';
+                            }
+                            return rowStart + item + rowEnd;
                         }).join('') + '</div>';
                     }
 
