@@ -71,6 +71,26 @@ if(!isset($location_error)) {
 
 }
 
+$stmt = $con->prepare("SELECT COUNT(id) as total_voters FROM voters");
+$stmt->execute();
+$stmt->bind_result($total_voters);
+$stmt->fetch();
+$stmt->close();
+
+$stmt = $con->prepare("SELECT COUNT(id) as total_voters_registered FROM voters_data");
+$stmt->execute();
+$stmt->bind_result($total_voters_registered);
+$stmt->fetch();
+$stmt->close();
+
+$stmt = $con->prepare("SELECT COUNT(id) as total_done_voters FROM voters_data WHERE status = 3");
+$stmt->execute();
+$stmt->bind_result($total_done_voters);
+$stmt->fetch();
+$stmt->close();
+
+$voters_percent = $total_voters_registered > 0 ? round(($total_done_voters / $total_voters) * 100, 2) : 0;
+
 // $done_voters = mysqli_query($con,"SELECT * FROM screens WHERE status = '3'");
 // $total_done_voters = mysqli_num_rows($done_voters);
 ?>
@@ -289,6 +309,16 @@ if(!isset($location_error)) {
 				</div>
 				<!-- /.box-content -->
 			</div>
+
+            <div class="col-md-12 col-xs-12">
+                <div class="box-content text-white <?php echo $voters_percent >= 50 ? 'bg-success' : 'bg-danger'; ?>">
+                    <div class="statistics-box with-icon">
+                        <i class="ico small fa fa-percent"></i>
+                        <p class="text text-white" style="font-weight:bold;">نسبة الناخبين الذين قاموا بالتصويت</p>
+                        <h2 class="counter"><?php echo $voters_percent; ?>%</h2>
+                    </div>
+                </div>
+            </div>
 			<!-- /.col-lg-3 col-md-6 col-xs-12 -->
 		</div>
 		<!-- .row -->
