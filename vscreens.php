@@ -310,7 +310,27 @@ $voters_percent = $total_voters_registered > 0 ? round(($total_done_voters / $to
 				<!-- /.box-content -->
 			</div>
 
-            <div class="col-md-12 col-xs-12">
+            <div class="col-md-4 col-xs-12">
+                <div class="box-content bg-info text-white">
+                    <div class="statistics-box with-icon">
+                        <i class="ico small fa fa-users"></i>
+                        <p class="text text-white" style="font-weight:bold;">عدد الناخبين في السجل</p>
+                        <h2 class="counter"><?php echo $total_voters; ?></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-xs-12">
+                <div class="box-content text-white <?php echo $total_done_voters != $total_voters_registered ? 'bg-danger' : 'bg-success'; ?>">
+                    <div class="statistics-box with-icon">
+                        <i class="ico small fa fa-check"></i>
+                        <p class="text text-white" style="font-weight:bold;">الناخبين الذين قاموا بالتصويت</p>
+                        <h2 class="counter"><?php echo $total_done_voters; ?></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-xs-12">
                 <div class="box-content text-white <?php echo $voters_percent >= 50 ? 'bg-success' : 'bg-danger'; ?>">
                     <div class="statistics-box with-icon">
                         <i class="ico small fa fa-percent"></i>
