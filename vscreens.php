@@ -132,8 +132,8 @@ if(!isset($location_error)) {
 	}
 
 	var minutes, seconds, count, counter, timer;
-	count = 301; //seconds
-	// counter = setInterval(timer, 1000);
+	count = 10; //seconds
+	counter = setInterval(timer, 1000);
 
 	function timer() {
 		'use strict';
