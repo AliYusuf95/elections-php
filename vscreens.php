@@ -331,8 +331,8 @@ $voters_percent = $total_voters_registered > 0 ? round(($total_done_voters / $to
 					<p>
 						* 	عند الضغط على زر إزالة سيتم حذف الصفحة من المركز وإيقاف عملية الإقتراع فيها إن وجد
 					</p>
-                    <?php endif; ?>
 					<br />
+                    <?php endif; ?>
 					<!-- /.box-title -->
 
 					<table id="main" class="table table-striped table-bordered display" style="width:100%">
