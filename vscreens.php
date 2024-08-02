@@ -497,6 +497,9 @@ $voters_percent = $total_voters_registered > 0 ? round(($total_done_voters / $to
 				},
 
 			},
+            <?php if(!$isUser): ?>
+            bFilter: false,
+            <?php endif; ?>
 			dom: 'Bfrtip',
 			buttons: [
                 <?php if($isUser): ?>
