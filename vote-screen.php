@@ -181,6 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         @media (min-width: 1200px) {
             .col-lg-offset-3 {
                 margin-right: 25%;
+                margin-left: unset;
             }
         }
     </style>
