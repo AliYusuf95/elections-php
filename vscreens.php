@@ -142,6 +142,7 @@ $voters_percent = $total_voters_registered > 0 ? round(($total_done_voters / $to
 		}
 	}
 	</style>
+    <?php if(!$isUser): ?>
   <script>
   function checklength(i) {
 		'use strict';
@@ -170,6 +171,7 @@ $voters_percent = $total_voters_registered > 0 ? round(($total_done_voters / $to
 		}
 	}
   </script>
+    <?php endif; ?>
 </head>
 
 <body>

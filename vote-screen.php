@@ -178,6 +178,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         div.swal2-container {
             font-size: 1.7rem;
         }
+        @media (min-width: 1200px) {
+            .col-lg-offset-3 {
+                margin-right: 25%;
+            }
+        }
     </style>
 
 </head>
@@ -435,6 +440,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         const title = `<div class="row position" id="position-${position.id}" data-position-id="${position.id}"><div class="col-lg-12" style="margin-bottom: 40px;"><h1 style="font-weight: 700;">${position.name}</h1>${selectedCounter}<h4>يمكنك إختيار ${pronounce} او أقل</h4></div>`;
                         const rowSize = 4;
                         let rowStartPosition = 0;
+                        const twoCandidates = candidates.length === 2;
                         return title + candidates.map(function (c, i) {
                             let rowStart = '';
                             let rowEnd = '';
@@ -442,7 +448,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 rowStart = '<div class="row">';
                                 rowStartPosition = i;
                             }
-                            const item = `<div class="col-lg-3 col-md-6">
+                            let offset = '';
+                            if (i === 0 && twoCandidates) {
+                                offset = 'col-lg-offset-3';
+                            }
+                            const item = `<div class="col-lg-3 col-md-6 ${offset}">
                                 <div class="candidate box-contact">
                                     <spin class="badge bg-danger select-count"></spin>
                                     <img src="${c.img}" alt="" class="avatar">
