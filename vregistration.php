@@ -427,7 +427,7 @@ function timer() {
                     if ($accept_only_from_voters_table && !$voter_id) {
                         throw new Exception('الرقم الشخصي غير مسجل');
                     } else if (!$voter_id) {
-                        $stmt = $con->prepare("INSERT INTO $voters_table (cpr, status, locationId, userId) VALUES(?, 0, ?, ?)");
+                        $stmt = $con->prepare("INSERT INTO $voters_table (cpr, status, locationId, userId, createdAt, updatedAt) VALUES(?, 0, ?, ?, NOW(), NOW())");
                         $stmt->bind_param('sii', $cpr, $location_id, $user_id);
                         $stmt->execute();
                         if ($con->affected_rows < 1) {
