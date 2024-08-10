@@ -15,10 +15,10 @@ $isAdmin = false;
 $voters_table = 'voters';
 $voting_results_table = 'voting_results';
 $voters_data_table = 'voters_data';
-$voter_form_fields = array('name', 'mobile');
-$voter_required_fields = array('cpr', 'screen');
+$voter_form_fields = VOTER_FORM_FIELDS;
+$voter_required_fields = VOTER_REQUIRED_FIELDS;
 $users_table = 'users';
-$accept_only_from_voters_table = true;
+$accept_only_from_voters_table = ACCEPT_NEW_VOTERS;
 $max_voting_age = 16;
 
 // Check if the user is logged in, if not then redirect him to login page

@@ -526,14 +526,14 @@ if ($isAllLocationsClosed && isset($_POST['export-doc'])) {
 				</div>
                 <?php
                 // select voters group by fromwhere
-                $select_voters_group = mysqli_query($con, "SELECT fromwhere, count(*) as total FROM voters_data where fromwhere <> '' GROUP BY fromwhere");
+                $select_voters_group = mysqli_query($con, "SELECT fromwhere, count(*) as total FROM voters_data where fromwhere <> '' AND status = 3 GROUP BY fromwhere");
                 if (mysqli_num_rows($select_voters_group) > 0):
                     ?>
                     <div class="box-content">
                         <h4 class="box-title">إجمالي الناخبين حسب المنطقة</h4>
                         <?php
                         // select voters group by fromwhere
-                        $select_voters_group = mysqli_query($con, "SELECT fromwhere, count(*) as total FROM voters_data where fromwhere <> '' GROUP BY fromwhere");
+                        $select_voters_group = mysqli_query($con, "SELECT fromwhere, count(*) as total FROM voters_data where fromwhere <> '' AND status = 3 GROUP BY fromwhere");
                         foreach ($select_voters_group as $key => $value):
                             ?>
                             <div class="col-lg-4 col-md-6">
