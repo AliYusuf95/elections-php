@@ -585,8 +585,11 @@ function timer() {
 								<input name="mobile" value="<?php echo ($check_user['mobile'] == 0 ? '' : $check_user['mobile']) ?>" class="form-control" placeholder="رقم الهاتف/الواتس اب" title="يجب ان يكون رقم الموبايل 8 ارقام">
 							</div>
 						</div>
-						
-						<!-- div class="form-group">
+
+                        <?php
+                        if (in_array('fromwhere', $voter_required_fields)):
+                        ?>
+						<div class="form-group">
 							<div class="input-group">
 								<div class="input-group-addon"><span class="glyphicon glyphicon-map-marker"></span></div>
 								<select class="form-control" name="fromwhere" required>
@@ -605,7 +608,8 @@ function timer() {
 								}
 								?>
 							</select>
-							</div-->
+							</div>
+                        <?php endif; ?>
 						</div>
 
 						<div class="form-group">
