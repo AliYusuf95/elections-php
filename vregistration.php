@@ -427,8 +427,8 @@ function timer() {
                     if ($accept_only_from_voters_table && !$voter_id) {
                         throw new Exception('الرقم الشخصي غير مسجل');
                     } else if (!$voter_id) {
-                        $stmt = $con->prepare("INSERT INTO $voters_table (cpr, status, locationId, userId, createdAt, updatedAt) VALUES(?, 0, ?, ?, NOW(), NOW())");
-                        $stmt->bind_param('sii', $cpr, $location_id, $user_id);
+                        $stmt = $con->prepare("INSERT INTO $voters_table (cpr, name, mobile, fromwhere, createdAt, updatedAt) VALUES (?, NOW(), NOW())");
+                        $stmt->bind_param('ssss', $cpr, $_POST['name'], $_POST['mobile'], $_POST['fromwhere']);
                         $stmt->execute();
                         if ($con->affected_rows < 1) {
                             throw new Exception('حدث خطأ في حفظ البيانات، يرجى المحاولة مجدداً');
