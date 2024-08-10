@@ -11,6 +11,7 @@ $dotenv->required('DB_HOST');
 $dotenv->required('DB_USER');
 $dotenv->required('DB_PASS');
 $dotenv->required('DB_NAME');
+$dotenv->ifPresent('ACCEPT_NEW_VOTERS')->isBoolean();
 
 // define variables
 define('IS_LOCALHOST', str_contains($_SERVER['HTTP_HOST'], 'localhost'));
@@ -24,7 +25,7 @@ define('DB_USER', $_ENV['DB_USER']);
 define('DB_PASS', $_ENV['DB_PASS']);
 define('DB_NAME', $_ENV['DB_NAME']);
 define('DB_PORT', $_ENV['DB_PORT']);
-define('ACCEPT_NEW_VOTERS', $_ENV['ACCEPT_NEW_VOTERS'] ?? false);
+define('ACCEPT_NEW_VOTERS', $_ENV['ACCEPT_NEW_VOTERS']);
 define('VOTER_FORM_FIELDS', $_ENV['VOTER_FORM_FIELDS'] ? explode(',', $_ENV['VOTER_FORM_FIELDS']) : ['name', 'mobile', 'fromwhere']);
 define('VOTER_REQUIRED_FIELDS', $_ENV['VOTER_REQUIRED_FIELDS'] ? explode(',', $_ENV['VOTER_REQUIRED_FIELDS']) : ['cpr', 'screen', 'fromwhere']);
 
