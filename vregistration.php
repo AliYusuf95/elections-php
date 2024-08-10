@@ -363,7 +363,7 @@ function timer() {
 
                     $cpr = trim($_POST['cpr']);
 					$check_error = null;
-					$stmt = mysqli_prepare($con, "SELECT id FROM $voters_data_table WHERE TRIM(cpr) = ?");
+					$stmt = mysqli_prepare($con, "SELECT id FROM $voters_data_table WHERE TRIM(cpr) = ? AND status > 0");
 					mysqli_stmt_bind_param($stmt, "s", $cpr);
 					if(!mysqli_stmt_execute($stmt)) {
 						$check_error = 'حدث خطأ، يرجى المحاولة مجددا';
