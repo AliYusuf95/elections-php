@@ -427,7 +427,7 @@ function timer() {
                     if (!empty($voter_id)) {
                         // check if voter already has a screen assigned
                         $stmt = $con->prepare("SELECT name FROM screens WHERE voterId = ?");
-                        $stmt->bind_param('ii', $voter_id);
+                        $stmt->bind_param('i', $voter_id);
                         $stmt->execute();
                         $stmt->bind_result($screen_name);
                         $stmt->fetch();
