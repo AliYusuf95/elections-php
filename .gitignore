@@ -4,3 +4,4 @@ composer.phar
 /.mariadb/
 .env
 error_log
+logo.png
