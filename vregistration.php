@@ -388,6 +388,17 @@ function timer() {
 						}
                         $stmt->close();
 					}
+
+                    // check if cpr assigned to any screen
+                    $stmt = $con->prepare("SELECT name FROM screens WHERE voterId IS NOT NULL AND voterId IN (SELECT id FROM $voters_table WHERE TRIM(cpr) = ?)");
+                    $stmt->bind_param('s', $cpr);
+                    $stmt->execute();
+                    $stmt->bind_result($screen_name);
+                    $stmt->fetch();
+                    $stmt->close();
+                    if (!empty($screen_name)) {
+                        $check_error = 'الناخب صاحب الرقم الشخصي '.$cpr.' مسجل مسبقاً في صفحة الإقتراع ('.$screen_name.')';
+                    }
 				} catch (Exception $e) {
 					$check_error = $e->getMessage();
 				}
