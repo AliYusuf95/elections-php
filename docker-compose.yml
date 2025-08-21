@@ -3,7 +3,7 @@ services:
 
   mariadb:
     image: mariadb:latest
-    restart: always
+    restart: on-failure
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: memamali_elections
@@ -16,7 +16,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin:latest
-    restart: always
+    restart: on-failure
     environment:
       PMA_HOST: mariadb
       PMA_USER: memamali_public
@@ -28,7 +28,7 @@ services:
 
   web:
     build: .
-    restart: always
+    restart: on-failure
     ports:
       - "8111:80"
     volumes:
@@ -39,7 +39,7 @@ services:
 
   ws:
     build: ../elections-ws
-    restart: always
+    restart: on-failure
     ports:
       - "8113:3000"
     volumes:

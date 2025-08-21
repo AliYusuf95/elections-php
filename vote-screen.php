@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error_message = 'حدث خطأ في حفظ البيانات، الناخب صوت مسبقًا';
                 throw new Exception($error_message);
             }
-            
+
             $stmt->close();
 
             // use inter and update on duplicate
@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- RTL -->
     <link rel="stylesheet" href="assets/styles/style-rtl.min.css">
 
-    <style> 
+    <style>
         .candidate.box-contact.selected {
             border-color: #00bf4f!important;
             background-color: #a1dbb9!important;
@@ -438,37 +438,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const getPositionPageHtml = function (position, candidates) {
                         const pronounce = position.maxVotes > 1 ? `${position.maxVotes} أشخاص` : 'شخص';
                         const selectedCounter = `<h2 style="color: #af5656;">عدد اختياراتك الحالي:<span id="count-checked-checkboxes-${position.id}">0</span></h2>`;
-                        const title = `<div class="row position" id="position-${position.id}" data-position-id="${position.id}"><div class="col-lg-12" style="margin-bottom: 40px;"><h1 style="font-weight: 700;">${position.name}</h1>${selectedCounter}<h4>يمكنك إختيار ${pronounce} او أقل</h4></div>`;
+                        const header = `<div class="row position" id="position-${position.id}" data-position-id="${position.id}"><div class="col-lg-12" style="margin-bottom: 40px;"><h1 style="font-weight: 700;">${position.name}</h1>${selectedCounter}<h4>يمكنك إختيار ${pronounce} او أقل</h4></div>`;
                         const rowSize = 4;
-                        let rowStartPosition = 0;
                         const twoCandidates = candidates.length === 2;
-                        return title + candidates.map(function (c, i) {
-                            let rowStart = '';
-                            let rowEnd = '';
-                            if (i % rowSize === 0) {
-                                rowStart = '<div class="row">';
-                                rowStartPosition = i;
-                            }
-                            let offset = '';
-                            if (i === 0 && twoCandidates) {
-                                offset = 'col-lg-offset-3';
-                            }
-                            const item = `<div class="col-lg-3 col-md-6 ${offset}">
-                                <div class="candidate box-contact">
-                                    <spin class="badge bg-danger select-count"></spin>
-                                    <img src="${c.img}" alt="" class="avatar">
-                                    <h3 class="name margin-top-10">${c.name}</h3>
-                                    <div class="text-muted">
-                                        <input type="checkbox" name="selected_candidates[]" value="${c.id}" style="width: 25px; height: 25px;"><br>
-                                        <label for="chk-1">اضغط على المربع للإختيار</label>
+                        const rows = [];
+                        for (let i = 0; i < candidates.length; i += rowSize) {
+                            const slice = candidates.slice(i, i + rowSize);
+                            const cols = slice.map((c, idx) => {
+                                let offset = '';
+                                if (twoCandidates && i === 0 && idx === 0) {
+                                    offset = 'col-lg-offset-3';
+                                }
+                                return `<div class="col-lg-3 col-md-6 ${offset}">
+                                    <div class="candidate box-contact">
+                                        <spin class="badge bg-danger select-count"></spin>
+                                        <img src="${c.img}" alt="" class="avatar">
+                                        <h3 class="name margin-top-10">${c.name}</h3>
+                                        <div class="text-muted">
+                                            <input type="checkbox" name="selected_candidates[]" value="${c.id}" style="width: 25px; height: 25px;"><br>
+                                            <label>اضغط على المربع للإختيار</label>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>`;
-                            if (i !== rowStartPosition && ((i+1) % rowSize === 0)) {
-                                rowEnd = '</div>';
-                            }
-                            return rowStart + item + rowEnd;
-                        }).join('') + '</div>';
+                                </div>`;
+                            }).join('');
+                            rows.push(`<div class="row">${cols}</div>`);
+                        }
+                        return header + rows.join('') + '</div>';
                     }
 
                     const html = candidatesByPosition.map(function (item) {
@@ -551,6 +546,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     });
 
                     $('#page-submit button').on('click', function() {
+                        console.log("Submitting vote...");
                         const current = $('.position:visible').data('position-id');
                         const currentIndex = candidatesByPosition.findIndex(function (item) {
                             return String(item.position.id) === String(current);
