@@ -449,10 +449,16 @@ function timer() {
                     while ($stmt->fetch()) {
                         $voter_table_fields[] = $column_name;
                     }
+                    $stmt->close();
                     // insert data defined in $voter_table_fields
-                    $stmt = $con->prepare("INSERT INTO $voters_data_table (".implode(',', $voter_table_fields).", createdAt, updatedAt) VALUES(".implode(',', array_fill(0, count($voter_table_fields), '?')).", NOW(), NOW())");
-
-                    $types = str_repeat('s', count($voter_table_fields));
+                    $placeholders = implode(',', array_fill(0, count($voter_table_fields), '?'));
+                    $stmt = $con->prepare("
+                        INSERT INTO $voters_data_table (".implode(',', $voter_table_fields).", createdAt, updatedAt)
+                        SELECT $placeholders, NOW(), NOW()
+                        FROM DUAL
+                        WHERE NOT EXISTS (SELECT 1 FROM $voters_data_table WHERE voterId = ?)
+                    ");
+                    $types = str_repeat('s', count($voter_table_fields)) . 'i';
                     // use data from post
                     $values = array_map(function($field) use ($location_id, $user_id, $voter_id) {
                         if ($field == 'locationId') {
@@ -469,7 +475,7 @@ function timer() {
                         }
                         return isset($_POST[$field]) ? trim($_POST[$field]) : null;
                     }, $voter_table_fields);
-					$stmt->bind_param($types, ...$values);
+					$stmt->bind_param($types, ...[...$values, $voter_id]);
 					$stmt->execute();
 
 					if ($con->affected_rows < 1) {
