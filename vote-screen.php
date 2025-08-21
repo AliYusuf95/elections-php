@@ -3,6 +3,8 @@ global $con;
 include 'config.php';
 include 'php-csrf.php';
 
+// Initialize the session
+session_set_cookie_params(0, '/', COOKIE_DOMAIN);
 session_start();
 // Initialize an instance
 $csrf = new CSRF('vote-screen', 'key-awesome', 0);
