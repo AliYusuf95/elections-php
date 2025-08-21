@@ -424,6 +424,19 @@ function timer() {
                     $stmt->fetch();
                     $stmt->close();
 
+                    if (!empty($voter_id)) {
+                        // check if voter already has a screen assigned
+                        $stmt = $con->prepare("SELECT name FROM screens WHERE voterId = ?");
+                        $stmt->bind_param('ii', $voter_id);
+                        $stmt->execute();
+                        $stmt->bind_result($screen_name);
+                        $stmt->fetch();
+                        $stmt->close();
+                        if (!empty($screen_name)) {
+                            throw new Exception('الناخب صاحب الرقم الشخصي '.$cpr.' مسجل مسبقاً في صفحة الإقتراع ('.$screen_name.')');
+                        }
+                    }
+
                     if ($accept_only_from_voters_table && !$voter_id) {
                         throw new Exception('الرقم الشخصي غير مسجل');
                     } else if (!$voter_id) {
