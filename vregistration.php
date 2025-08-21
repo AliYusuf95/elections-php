@@ -18,7 +18,7 @@ $voters_data_table = 'voters_data';
 $voter_form_fields = VOTER_FORM_FIELDS;
 $voter_required_fields = VOTER_REQUIRED_FIELDS;
 $users_table = 'users';
-$accept_only_from_voters_table = ACCEPT_NEW_VOTERS;
+$accept_only_from_voters_table = ACCEPT_NEW_VOTERS == false;
 $max_voting_age = 16;
 
 // Check if the user is logged in, if not then redirect him to login page
