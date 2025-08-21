@@ -12,6 +12,11 @@ $dotenv->required('DB_USER');
 $dotenv->required('DB_PASS');
 $dotenv->required('DB_NAME');
 $dotenv->ifPresent('ACCEPT_NEW_VOTERS')->isBoolean();
+if (filter_var($_ENV['ACCEPT_NEW_VOTERS'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true) {
+    $dotenv->required('MIN_VOTING_AGE')->isInteger()->assert(static function (string $value) {
+        return (int)$value > 0;
+    }, 'Minimum voting age must be greater than 0');
+}
 
 // define variables
 define('IS_LOCALHOST', str_contains($_SERVER['HTTP_HOST'], 'localhost'));
@@ -28,6 +33,7 @@ define('DB_PORT', $_ENV['DB_PORT']);
 define('ACCEPT_NEW_VOTERS', filter_var($_ENV['ACCEPT_NEW_VOTERS'], FILTER_VALIDATE_BOOLEAN));
 define('VOTER_FORM_FIELDS', $_ENV['VOTER_FORM_FIELDS'] ? explode(',', $_ENV['VOTER_FORM_FIELDS']) : ['name', 'mobile', 'fromwhere']);
 define('VOTER_REQUIRED_FIELDS', $_ENV['VOTER_REQUIRED_FIELDS'] ? explode(',', $_ENV['VOTER_REQUIRED_FIELDS']) : ['cpr', 'screen', 'fromwhere']);
+define('MIN_VOTING_AGE', filter_var($_ENV['MIN_VOTING_AGE'], FILTER_VALIDATE_INT));
 
 
 $con = mysqli_init();
